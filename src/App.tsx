@@ -328,12 +328,6 @@ function App() {
           onClose={handlePreviewClose}
         />
       )}
-
-      {/* Footer */}
-      <footer className="bg-dark-900 text-dark-500 text-center py-4 text-xs">
-        <p>PeerCard — Peering CRM 产品路线第一站</p>
-        <p className="mt-1">由 <a href="https://with.woa.com/" style={{ color: '#8A2BE2' }} target="_blank" rel="noreferrer">With</a> 通过自然语言生成</p>
-      </footer>
     </div>
   )
 }
