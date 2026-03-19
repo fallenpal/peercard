@@ -109,11 +109,15 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
                 >
                   {/* 名片缩略图 */}
                   <div className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-dark-100">
-                    <img
-                      src={URL.createObjectURL(contact.imageBlob)}
-                      alt={contact.name || '名片'}
-                      className="w-full h-full object-cover"
-                    />
+                    {contact.image_url ? (
+                      <img
+                        src={contact.image_url}
+                        alt={contact.name || '名片'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-dark-400 text-xs">📇</div>
+                    )}
                   </div>
                   {/* 信息 */}
                   <div className="flex-1 min-w-0">

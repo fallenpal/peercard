@@ -34,22 +34,14 @@ function generateVCardFromStored(c: StoredContact): string {
 
 export default function CardDetail({ userId, contactId, onBack, onDeleted }: CardDetailProps) {
   const [contact, setContact] = useState<StoredContact | null>(null)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getContact(userId, contactId).then(c => {
-      if (c) {
-        setContact(c)
-        setImageUrl(URL.createObjectURL(c.imageBlob))
-      }
+      if (c) setContact(c)
       setLoading(false)
     })
-    return () => {
-      if (imageUrl) URL.revokeObjectURL(imageUrl)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactId])
+  }, [userId, contactId])
 
   const handleExportVCard = useCallback(() => {
     if (!contact) return
@@ -93,10 +85,10 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
       </button>
 
       {/* 原始名片照片 */}
-      {imageUrl && (
+      {contact.image_url && (
         <div className="rounded-xl overflow-hidden shadow-md bg-dark-100">
           <img
-            src={imageUrl}
+            src={contact.image_url}
             alt={contact.name || '名片'}
             className="w-full object-contain max-h-80"
           />

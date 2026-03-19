@@ -46,10 +46,11 @@ export interface RecognizeResult {
   address: string | null;
 }
 
-/** 持久化存储用接口（IndexedDB） */
+/** 持久化存储用接口（Supabase 云端） */
 export interface StoredContact {
   id: string;
-  imageBlob: Blob;
+  image_path: string | null;
+  image_url?: string;
   createdAt: number;
   name: string | null;
   organization: string | null;

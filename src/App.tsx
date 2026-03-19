@@ -105,7 +105,7 @@ function AppInner() {
         if (user) {
           dbSave(user.id, {
             id: contact.id,
-            imageBlob: contact.imageFile,
+            image_path: null,
             createdAt: now,
             name: result.name,
             organization: result.organization,
@@ -115,7 +115,7 @@ function AppInner() {
             url: result.url || '',
             address: result.address || '',
             notes: '',
-          }).catch(err => console.error('IndexedDB save failed:', err))
+          }, contact.imageFile).catch(err => console.error('Cloud save failed:', err))
         }
         previewQueueRef.current.push(contact.id)
         setSelectedIds(prev => new Set(prev).add(contact.id))
