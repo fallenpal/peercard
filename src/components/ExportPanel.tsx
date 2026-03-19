@@ -1,5 +1,5 @@
 import type { Contact } from '../types/contact'
-import { generateSingleVCard, generateBatchVCard, downloadFile } from '../lib/vcard'
+import { generateSingleVCard, downloadVCardsAsZip, downloadFile } from '../lib/vcard'
 import { generateCSV } from '../lib/csv'
 
 interface ExportPanelProps {
@@ -16,11 +16,16 @@ export default function ExportPanel({ contacts, allContacts, selectedIds, onTogg
   const processingCount = allContacts.filter(c => c.status === 'processing' || c.status === 'pending').length
   const allSelected = contacts.length > 0 && contacts.every(c => selectedIds.has(c.id))
 
-  /** 批量导出 vCard */
-  const handleExportAllVCard = () => {
+  /** 导出 vCard — 单人直接下载 vcf，多人打包 zip */
+  const handleExportVCard = async () => {
     if (!hasSelected) return
-    const content = generateBatchVCard(selectedContacts)
-    downloadFile(content, `peercard_contacts_${selectedContacts.length}.vcf`, 'text/vcard')
+    if (selectedContacts.length === 1) {
+      const content = generateSingleVCard(selectedContacts[0])
+      const name = selectedContacts[0].name || 'contact'
+      downloadFile(content, `${name}.vcf`, 'text/vcard')
+    } else {
+      await downloadVCardsAsZip(selectedContacts)
+    }
   }
 
   /** 导出 CSV */
@@ -76,7 +81,7 @@ export default function ExportPanel({ contacts, allContacts, selectedIds, onTogg
             )}
 
             <button
-              onClick={handleExportAllVCard}
+              onClick={handleExportVCard}
               disabled={!hasSelected}
               className={`
                 btn-success gap-1.5 text-sm
