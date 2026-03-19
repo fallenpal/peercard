@@ -101,7 +101,7 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ error: 'API Key 无效' })
       }
 
-      return res.status(500).json({ error: `AI 识别服务错误 (${response.status})` })
+      return res.status(500).json({ error: `AI 识别服务错误 (${response.status}): ${errorText.slice(0, 200)}` })
     }
 
     const data = await response.json()
