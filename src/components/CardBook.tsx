@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { StoredContact } from '../types/contact'
-import { getAllContacts } from '../lib/db'
+import { getAllContacts, getCachedContactList } from '../lib/db'
+import { supabase } from '../lib/supabase'
 
 interface CardBookProps {
   userId: string
@@ -30,10 +31,22 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
   const [query, setQuery] = useState('')
 
   useEffect(() => {
+    let cancelled = false
+    // 1. 先展示本地缓存（秒开）
+    getCachedContactList(userId).then(cached => {
+      if (cancelled) return
+      if (cached.length > 0) {
+        setContacts(cached)
+        setLoading(false)
+      }
+    })
+    // 2. 后台从云端拉最新数据
     getAllContacts(userId).then(list => {
+      if (cancelled) return
       setContacts(list)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
+    return () => { cancelled = true }
   }, [userId])
 
   const filtered = useMemo(() => {
@@ -108,17 +121,7 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
                   className="w-full flex items-center gap-4 p-3 hover:bg-dark-50 transition-colors text-left"
                 >
                   {/* 名片缩略图 */}
-                  <div className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-dark-100">
-                    {contact.image_url ? (
-                      <img
-                        src={contact.image_url}
-                        alt={contact.name || '名片'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-dark-400 text-xs">📇</div>
-                    )}
-                  </div>
+                  <Thumbnail contact={contact} />
                   {/* 信息 */}
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-dark-900 text-base truncate">
@@ -137,6 +140,32 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** 缩略图：有缓存直接显示，没缓存懒加载签名 URL */
+function Thumbnail({ contact }: { contact: StoredContact }) {
+  const [src, setSrc] = useState<string | undefined>(contact.image_url)
+
+  useEffect(() => {
+    if (src || !contact.image_path) return
+    // 懒加载：获取签名 URL
+    supabase.storage
+      .from('card-images')
+      .createSignedUrl(contact.image_path, 3600)
+      .then(({ data }) => {
+        if (data?.signedUrl) setSrc(data.signedUrl)
+      })
+  }, [src, contact.image_path])
+
+  return (
+    <div className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-dark-100">
+      {src ? (
+        <img src={src} alt={contact.name || '名片'} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-dark-400 text-xs">📇</div>
+      )}
     </div>
   )
 }
