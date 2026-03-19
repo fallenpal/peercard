@@ -3,6 +3,7 @@ import type { StoredContact } from '../types/contact'
 import { getAllContacts } from '../lib/db'
 
 interface CardBookProps {
+  userId: string
   onSelectContact: (id: string) => void
   onBack: () => void
 }
@@ -23,17 +24,17 @@ function groupByDate(contacts: StoredContact[]): Map<string, StoredContact[]> {
   return map
 }
 
-export default function CardBook({ onSelectContact, onBack }: CardBookProps) {
+export default function CardBook({ userId, onSelectContact, onBack }: CardBookProps) {
   const [contacts, setContacts] = useState<StoredContact[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    getAllContacts().then(list => {
+    getAllContacts(userId).then(list => {
       setContacts(list)
       setLoading(false)
     })
-  }, [])
+  }, [userId])
 
   const filtered = useMemo(() => {
     if (!query.trim()) return contacts

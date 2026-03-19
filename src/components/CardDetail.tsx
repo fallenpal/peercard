@@ -4,9 +4,9 @@ import { getContact, deleteContact } from '../lib/db'
 import { downloadFile } from '../lib/vcard'
 
 interface CardDetailProps {
+  userId: string
   contactId: string
   onBack: () => void
-  /** 删除后回调 */
   onDeleted: () => void
 }
 
@@ -32,13 +32,13 @@ function generateVCardFromStored(c: StoredContact): string {
   return lines.join('\r\n')
 }
 
-export default function CardDetail({ contactId, onBack, onDeleted }: CardDetailProps) {
+export default function CardDetail({ userId, contactId, onBack, onDeleted }: CardDetailProps) {
   const [contact, setContact] = useState<StoredContact | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getContact(contactId).then(c => {
+    getContact(userId, contactId).then(c => {
       if (c) {
         setContact(c)
         setImageUrl(URL.createObjectURL(c.imageBlob))
@@ -61,7 +61,7 @@ export default function CardDetail({ contactId, onBack, onDeleted }: CardDetailP
   const handleDelete = useCallback(async () => {
     if (!contact) return
     if (!confirm('确定要删除这张名片吗？')) return
-    await deleteContact(contact.id)
+    await deleteContact(userId, contact.id)
     onDeleted()
   }, [contact, onDeleted])
 
