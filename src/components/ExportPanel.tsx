@@ -5,31 +5,35 @@ import { generateCSV } from '../lib/csv'
 interface ExportPanelProps {
   contacts: Contact[] // 已完成识别的联系人
   allContacts: Contact[] // 所有联系人（用于显示统计）
+  selectedIds: Set<string>
+  onToggleAll: () => void
 }
 
-export default function ExportPanel({ contacts, allContacts }: ExportPanelProps) {
-  const hasContacts = contacts.length > 0
+export default function ExportPanel({ contacts, allContacts, selectedIds, onToggleAll }: ExportPanelProps) {
+  const selectedContacts = contacts.filter(c => selectedIds.has(c.id))
+  const hasSelected = selectedContacts.length > 0
   const allDone = allContacts.every(c => c.status === 'completed' || c.status === 'failed')
   const processingCount = allContacts.filter(c => c.status === 'processing' || c.status === 'pending').length
+  const allSelected = contacts.length > 0 && contacts.every(c => selectedIds.has(c.id))
 
   /** 批量导出 vCard */
   const handleExportAllVCard = () => {
-    if (!hasContacts) return
-    const content = generateBatchVCard(contacts)
-    downloadFile(content, `peercard_contacts_${contacts.length}.vcf`, 'text/vcard')
+    if (!hasSelected) return
+    const content = generateBatchVCard(selectedContacts)
+    downloadFile(content, `peercard_contacts_${selectedContacts.length}.vcf`, 'text/vcard')
   }
 
   /** 导出 CSV */
   const handleExportCSV = () => {
-    if (!hasContacts) return
-    const content = generateCSV(contacts)
-    downloadFile(content, `peercard_contacts_${contacts.length}.csv`, 'text/csv')
+    if (!hasSelected) return
+    const content = generateCSV(selectedContacts)
+    downloadFile(content, `peercard_contacts_${selectedContacts.length}.csv`, 'text/csv')
   }
 
   return (
     <div className={`
       rounded-2xl border-2 overflow-hidden transition-all duration-300
-      ${allDone && hasContacts
+      ${allDone && hasSelected
         ? 'border-emerald-300 bg-gradient-to-r from-emerald-50 to-primary-50 shadow-lg shadow-emerald-100'
         : 'border-dark-200 bg-white'
       }
@@ -46,9 +50,9 @@ export default function ExportPanel({ contacts, allContacts }: ExportPanelProps)
               导出联系人
             </h2>
             <p className="text-xs text-dark-500 mt-1">
-              {hasContacts ? (
+              {contacts.length > 0 ? (
                 <>
-                  已识别 <span className="font-medium text-emerald-600">{contacts.length}</span> 位联系人
+                  已选择 <span className="font-medium text-emerald-600">{selectedContacts.length}</span> / {contacts.length} 位联系人
                   {processingCount > 0 && (
                     <span className="text-amber-600">，还有 {processingCount} 张识别中...</span>
                   )}
@@ -59,26 +63,36 @@ export default function ExportPanel({ contacts, allContacts }: ExportPanelProps)
             </p>
           </div>
 
-          {/* 右侧导出按钮 */}
+          {/* 右侧按钮 */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* 全选切换 */}
+            {contacts.length > 0 && (
+              <button
+                onClick={onToggleAll}
+                className="btn-secondary text-xs !py-1.5"
+              >
+                {allSelected ? '取消全选' : '全选'}
+              </button>
+            )}
+
             <button
               onClick={handleExportAllVCard}
-              disabled={!hasContacts}
+              disabled={!hasSelected}
               className={`
                 btn-success gap-1.5 text-sm
-                ${allDone && hasContacts ? 'animate-pulse-once !bg-emerald-600 !shadow-md' : ''}
+                ${allDone && hasSelected ? 'animate-pulse-once !bg-emerald-600 !shadow-md' : ''}
               `}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
               </svg>
-              批量导出 vCard ({contacts.length})
+              导出 vCard ({selectedContacts.length})
             </button>
 
             <button
               onClick={handleExportCSV}
-              disabled={!hasContacts}
+              disabled={!hasSelected}
               className="btn-secondary gap-1.5 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

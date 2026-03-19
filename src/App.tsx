@@ -11,6 +11,7 @@ function App() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [currentView, setCurrentView] = useState<AppView>('upload')
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const processingRef = useRef(false)
 
   /** 预览弹窗状态：当前正在预览的联系人 ID */
@@ -90,6 +91,8 @@ function App() {
         ))
         // 识别成功：加入预览队列
         previewQueueRef.current.push(contact.id)
+        // 自动勾选已完成的联系人
+        setSelectedIds(prev => new Set(prev).add(contact.id))
         // 如果当前没有正在预览的弹窗，立即显示
         setPreviewContactId(prev => {
           if (prev === null) {
@@ -136,6 +139,30 @@ function App() {
     ))
   }, [])
 
+  /** 切换联系人选中状态 */
+  const handleToggleSelect = useCallback((contactId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(contactId)) {
+        next.delete(contactId)
+      } else {
+        next.add(contactId)
+      }
+      return next
+    })
+  }, [])
+
+  /** 全选/取消全选 */
+  const handleToggleAll = useCallback(() => {
+    const allCompletedIds = contacts.filter(c => c.status === 'completed').map(c => c.id)
+    const allSelected = allCompletedIds.every(id => selectedIds.has(id))
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(allCompletedIds))
+    }
+  }, [contacts, selectedIds])
+
   /** 更新联系人数据 */
   const handleUpdateContact = useCallback((id: string, updates: Partial<Contact>) => {
     setContacts(prev => prev.map(c =>
@@ -178,13 +205,16 @@ function App() {
       {/* Header */}
       <header className="bg-dark-900 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCurrentView('upload')}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
             <span className="text-2xl">📇</span>
-            <div>
+            <div className="text-left">
               <h1 className="text-xl font-bold tracking-tight">PeerCard</h1>
               <p className="text-xs text-dark-400 hidden sm:block">名片识别 · 快速录入通讯录</p>
             </div>
-          </div>
+          </button>
           <div className="flex items-center gap-3">
             {currentView === 'editor' && (
               <button
@@ -217,6 +247,8 @@ function App() {
                 contacts={contacts}
                 onCardClick={handleCardClick}
                 onRetry={handleRetry}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
               />
             )}
 
@@ -225,6 +257,8 @@ function App() {
               <ExportPanel
                 contacts={completedContacts}
                 allContacts={contacts}
+                selectedIds={selectedIds}
+                onToggleAll={handleToggleAll}
               />
             )}
           </div>

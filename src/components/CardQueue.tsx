@@ -4,6 +4,8 @@ interface CardQueueProps {
   contacts: Contact[]
   onCardClick: (contactId: string) => void
   onRetry: (contactId: string) => void
+  selectedIds: Set<string>
+  onToggleSelect: (contactId: string) => void
 }
 
 /** 状态标签配置 */
@@ -14,7 +16,7 @@ const STATUS_CONFIG = {
   failed: { label: '失败', className: 'badge-failed', icon: '✕' },
 } as const
 
-export default function CardQueue({ contacts, onCardClick, onRetry }: CardQueueProps) {
+export default function CardQueue({ contacts, onCardClick, onRetry, selectedIds, onToggleSelect }: CardQueueProps) {
   const completedCount = contacts.filter(c => c.status === 'completed').length
   const processingCount = contacts.filter(c => c.status === 'processing').length
   const failedCount = contacts.filter(c => c.status === 'failed').length
@@ -65,6 +67,8 @@ export default function CardQueue({ contacts, onCardClick, onRetry }: CardQueueP
             contact={contact}
             onClick={() => onCardClick(contact.id)}
             onRetry={() => onRetry(contact.id)}
+            selected={selectedIds.has(contact.id)}
+            onToggleSelect={() => onToggleSelect(contact.id)}
           />
         ))}
       </div>
@@ -77,10 +81,14 @@ function CardItem({
   contact,
   onClick,
   onRetry,
+  selected,
+  onToggleSelect,
 }: {
   contact: Contact
   onClick: () => void
   onRetry: () => void
+  selected: boolean
+  onToggleSelect: () => void
 }) {
   const config = STATUS_CONFIG[contact.status]
   const isClickable = contact.status === 'completed'
@@ -118,6 +126,22 @@ function CardItem({
 
         {/* 状态标签 */}
         <div className="absolute top-2 right-2">
+
+        {/* 勾选框 — 仅已完成的卡片显示 */}
+        {contact.status === 'completed' && (
+          <label
+            className="absolute top-2 left-2 z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              className="w-4 h-4 rounded border-dark-300 text-primary-600
+                focus:ring-primary-500 cursor-pointer accent-primary-600"
+            />
+          </label>
+        )}
           <span className={config.className}>
             {contact.status === 'processing' ? (
               <span className="flex items-center gap-1">
