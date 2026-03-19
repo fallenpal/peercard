@@ -62,4 +62,4 @@ export interface StoredContact {
 }
 
 /** 应用视图状态 */
-export type AppView = 'upload' | 'editor' | 'cardbook' | 'carddetail';
+export type AppView = 'upload' | 'editor' | 'cardbook' | 'carddetail' | 'about';

@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Contact, AppView } from './types/contact'
+import { AuthProvider, useAuth } from './lib/auth'
+import { supabase } from './lib/supabase'
 import UploadZone from './components/UploadZone'
 import CardQueue from './components/CardQueue'
 import CardEditor from './components/CardEditor'
@@ -7,30 +9,36 @@ import ExportPanel from './components/ExportPanel'
 import RecognizePreview from './components/RecognizePreview'
 import CardBook from './components/CardBook'
 import CardDetail from './components/CardDetail'
+import AuthModal from './components/AuthModal'
+import AboutPage from './components/AboutPage'
 import { recognizeCard } from './lib/recognize'
 import { saveContact as dbSave } from './lib/db'
 
-function App() {
+function AppInner() {
+  const { user, signOut } = useAuth()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [currentView, setCurrentView] = useState<AppView>('upload')
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [detailContactId, setDetailContactId] = useState<string | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const processingRef = useRef(false)
   const bottomCameraRef = useRef<HTMLInputElement>(null)
 
-  /** 预览弹窗状态：当前正在预览的联系人 ID */
+  /** 预览弹窗状态 */
   const [previewContactId, setPreviewContactId] = useState<string | null>(null)
-  /** 待预览队列：识别完成后自动加入，逐个弹出预览 */
   const previewQueueRef = useRef<string[]>([])
 
-  /** 已完成识别的联系人 */
   const completedContacts = contacts.filter(c => c.status === 'completed')
 
-  /** 当前正在预览的联系人对象 */
   const previewContact = previewContactId
     ? contacts.find(c => c.id === previewContactId) ?? null
     : null
+
+  /** 页面加载时 increment visit count */
+  useEffect(() => {
+    supabase.rpc('increment_visits').then(() => {}, () => {})
+  }, [])
 
   /** 处理新上传的文件 */
   const handleFilesAdded = useCallback((files: File[]) => {
@@ -61,17 +69,14 @@ function App() {
     }
   }, [])
 
-  /** 识别队列调度 —— 逐张处理 pending 状态的名片 */
+  /** 识别队列调度 */
   useEffect(() => {
     const processNext = async () => {
       if (processingRef.current) return
-
       const pendingIndex = contacts.findIndex(c => c.status === 'pending')
       if (pendingIndex === -1) return
 
       processingRef.current = true
-
-      // 标记为处理中
       setContacts(prev => prev.map((c, i) =>
         i === pendingIndex ? { ...c, status: 'processing' as const } : c
       ))
@@ -96,29 +101,26 @@ function App() {
               }
             : c
         ))
-        // 持久化到 IndexedDB
-        dbSave({
-          id: contact.id,
-          imageBlob: contact.imageFile,
-          createdAt: now,
-          name: result.name,
-          organization: result.organization,
-          title: result.title,
-          emails: result.emails,
-          phones: result.phones,
-          url: result.url || '',
-          address: result.address || '',
-          notes: '',
-        }).catch(err => console.error('IndexedDB save failed:', err))
-        // 识别成功：加入预览队列
+        // 已登录才持久化
+        if (user) {
+          dbSave(user.id, {
+            id: contact.id,
+            imageBlob: contact.imageFile,
+            createdAt: now,
+            name: result.name,
+            organization: result.organization,
+            title: result.title,
+            emails: result.emails,
+            phones: result.phones,
+            url: result.url || '',
+            address: result.address || '',
+            notes: '',
+          }).catch(err => console.error('IndexedDB save failed:', err))
+        }
         previewQueueRef.current.push(contact.id)
-        // 自动勾选已完成的联系人
         setSelectedIds(prev => new Set(prev).add(contact.id))
-        // 如果当前没有正在预览的弹窗，立即显示
         setPreviewContactId(prev => {
-          if (prev === null) {
-            return previewQueueRef.current.shift() ?? null
-          }
+          if (prev === null) return previewQueueRef.current.shift() ?? null
           return prev
         })
       } catch (err) {
@@ -132,11 +134,9 @@ function App() {
         processingRef.current = false
       }
     }
-
     processNext()
-  }, [contacts])
+  }, [contacts, user])
 
-  /** 预览弹窗 - 确认保存 */
   const handlePreviewConfirm = useCallback((updates: Partial<Contact>) => {
     if (previewContactId) {
       setContacts(prev => prev.map(c =>
@@ -146,52 +146,35 @@ function App() {
     showNextPreview()
   }, [previewContactId, showNextPreview])
 
-  /** 预览弹窗 - 关闭（稍后编辑） */
   const handlePreviewClose = useCallback(() => {
     showNextPreview()
   }, [showNextPreview])
 
-  /** 重试失败的名片 */
   const handleRetry = useCallback((contactId: string) => {
     setContacts(prev => prev.map(c =>
-      c.id === contactId
-        ? { ...c, status: 'pending' as const, error: undefined }
-        : c
+      c.id === contactId ? { ...c, status: 'pending' as const, error: undefined } : c
     ))
   }, [])
 
-  /** 切换联系人选中状态 */
   const handleToggleSelect = useCallback((contactId: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev)
-      if (next.has(contactId)) {
-        next.delete(contactId)
-      } else {
-        next.add(contactId)
-      }
+      if (next.has(contactId)) next.delete(contactId)
+      else next.add(contactId)
       return next
     })
   }, [])
 
-  /** 全选/取消全选 */
   const handleToggleAll = useCallback(() => {
     const allCompletedIds = contacts.filter(c => c.status === 'completed').map(c => c.id)
     const allSelected = allCompletedIds.every(id => selectedIds.has(id))
-    if (allSelected) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(allCompletedIds))
-    }
+    setSelectedIds(allSelected ? new Set() : new Set(allCompletedIds))
   }, [contacts, selectedIds])
 
-  /** 更新联系人数据 */
   const handleUpdateContact = useCallback((id: string, updates: Partial<Contact>) => {
-    setContacts(prev => prev.map(c =>
-      c.id === id ? { ...c, ...updates } : c
-    ))
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
   }, [])
 
-  /** 点击名片进入编辑视图 */
   const handleCardClick = useCallback((contactId: string) => {
     const idx = contacts.findIndex(c => c.id === contactId)
     if (idx !== -1 && contacts[idx].status === 'completed') {
@@ -200,26 +183,30 @@ function App() {
     }
   }, [contacts])
 
-  /** 切换到上一张/下一张已完成名片 */
   const completedIndices = contacts
     .map((c, i) => c.status === 'completed' ? i : -1)
     .filter(i => i !== -1)
-
   const currentCompletedPos = completedIndices.indexOf(selectedIndex)
 
   const handlePrev = useCallback(() => {
-    if (currentCompletedPos > 0) {
-      setSelectedIndex(completedIndices[currentCompletedPos - 1])
-    }
+    if (currentCompletedPos > 0) setSelectedIndex(completedIndices[currentCompletedPos - 1])
   }, [currentCompletedPos, completedIndices])
 
   const handleNext = useCallback(() => {
-    if (currentCompletedPos < completedIndices.length - 1) {
+    if (currentCompletedPos < completedIndices.length - 1)
       setSelectedIndex(completedIndices[currentCompletedPos + 1])
-    }
   }, [currentCompletedPos, completedIndices])
 
   const selectedContact = contacts[selectedIndex] || null
+
+  /** 名片夹入口：未登录弹登录，已登录直接进 */
+  const handleCardBookClick = useCallback(() => {
+    if (!user) {
+      setShowAuthModal(true)
+    } else {
+      setCurrentView('cardbook')
+    }
+  }, [user])
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-dark-50 to-primary-50">
@@ -245,6 +232,26 @@ function App() {
                 ← 返回队列
               </button>
             )}
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-dark-400 hidden sm:inline truncate max-w-[120px]">
+                  {user.email}
+                </span>
+                <button
+                  onClick={signOut}
+                  className="text-xs text-dark-500 hover:text-dark-300 transition-colors"
+                >
+                  登出
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="text-xs text-dark-400 hover:text-white transition-colors"
+              >
+                登录
+              </button>
+            )}
             {contacts.length > 0 && (
               <div className="text-xs text-dark-400">
                 <span className="text-emerald-400 font-medium">{completedContacts.length}</span>
@@ -257,23 +264,24 @@ function App() {
 
       {/* 主内容区 */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 pb-24">
-        {currentView === 'cardbook' ? (
+        {currentView === 'about' ? (
+          <AboutPage onBack={() => setCurrentView('upload')} />
+        ) : currentView === 'cardbook' && user ? (
           <CardBook
+            userId={user.id}
             onSelectContact={(id) => { setDetailContactId(id); setCurrentView('carddetail') }}
             onBack={() => setCurrentView('upload')}
           />
-        ) : currentView === 'carddetail' && detailContactId ? (
+        ) : currentView === 'carddetail' && detailContactId && user ? (
           <CardDetail
+            userId={user.id}
             contactId={detailContactId}
             onBack={() => setCurrentView('cardbook')}
             onDeleted={() => setCurrentView('cardbook')}
           />
         ) : currentView === 'upload' ? (
           <div className="space-y-6">
-            {/* 上传区 */}
             <UploadZone onFilesAdded={handleFilesAdded} hasContacts={contacts.length > 0} />
-
-            {/* 名片队列 */}
             {contacts.length > 0 && (
               <CardQueue
                 contacts={contacts}
@@ -283,8 +291,6 @@ function App() {
                 onToggleSelect={handleToggleSelect}
               />
             )}
-
-            {/* 导出面板 */}
             {completedContacts.length > 0 && (
               <ExportPanel
                 contacts={completedContacts}
@@ -326,7 +332,7 @@ function App() {
             <span className="text-xs font-medium">拍照</span>
           </button>
           <button
-            onClick={() => setCurrentView('cardbook')}
+            onClick={handleCardBookClick}
             className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
               currentView === 'cardbook' || currentView === 'carddetail'
                 ? 'text-primary-700'
@@ -339,8 +345,21 @@ function App() {
             </svg>
             <span className="text-xs font-medium">名片夹</span>
           </button>
+          <button
+            onClick={() => setCurrentView('about')}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
+              currentView === 'about'
+                ? 'text-primary-700'
+                : 'text-dark-500 hover:text-primary-700'
+            }`}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+            </svg>
+            <span className="text-xs font-medium">关于</span>
+          </button>
         </div>
-        {/* 底部拍照隐藏 input */}
         <input
           ref={bottomCameraRef}
           type="file"
@@ -365,7 +384,23 @@ function App() {
           onClose={handlePreviewClose}
         />
       )}
+
+      {/* 登录弹窗 */}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => { setShowAuthModal(false); setCurrentView('cardbook') }}
+        />
+      )}
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
   )
 }
 
