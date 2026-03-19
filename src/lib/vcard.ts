@@ -1,5 +1,4 @@
 import type { Contact } from '../types/contact'
-import JSZip from 'jszip'
 
 /**
  * 转义 vCard 特殊字符
@@ -76,42 +75,6 @@ export function generateSingleVCard(contact: Contact): string {
   lines.push('END:VCARD')
 
   return lines.join('\r\n')
-}
-
-/**
- * 生成文件名安全字符串
- */
-function safeFilename(name: string): string {
-  return name.replace(/[/\\?%*:|"<>]/g, '_').trim() || 'contact'
-}
-
-/**
- * 将多个联系人各自打包为独立 .vcf，生成 zip 下载
- * iOS 不支持单个 vcf 包含多个联系人，所以用 zip 分开
- */
-export async function downloadVCardsAsZip(contacts: Contact[]) {
-  const zip = new JSZip()
-
-  contacts.forEach((contact, index) => {
-    const vcf = generateSingleVCard(contact)
-    const name = contact.name ? safeFilename(contact.name) : `contact_${index + 1}`
-    zip.file(`${name}.vcf`, vcf)
-  })
-
-  const blob = await zip.generateAsync({ type: 'blob' })
-  const url = URL.createObjectURL(blob)
-
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `peercard_contacts_${contacts.length}.zip`
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  a.click()
-
-  setTimeout(() => {
-    URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-  }, 100)
 }
 
 /**

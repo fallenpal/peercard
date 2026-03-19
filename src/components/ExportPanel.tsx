@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import type { Contact } from '../types/contact'
-import { generateSingleVCard, downloadVCardsAsZip, downloadFile } from '../lib/vcard'
+import { generateSingleVCard, downloadFile } from '../lib/vcard'
 import { generateCSV } from '../lib/csv'
 
 interface ExportPanelProps {
@@ -16,16 +17,46 @@ export default function ExportPanel({ contacts, allContacts, selectedIds, onTogg
   const processingCount = allContacts.filter(c => c.status === 'processing' || c.status === 'pending').length
   const allSelected = contacts.length > 0 && contacts.every(c => selectedIds.has(c.id))
 
-  /** 导出 vCard — 单人直接下载 vcf，多人打包 zip */
-  const handleExportVCard = async () => {
+  /** 逐个导出状态：当前下载到第几个（null 表示未在导出流程中） */
+  const [exportIndex, setExportIndex] = useState<number | null>(null)
+
+  const isExporting = exportIndex !== null
+
+  /** 开始逐个导出 vCard */
+  const handleStartExport = () => {
     if (!hasSelected) return
     if (selectedContacts.length === 1) {
-      const content = generateSingleVCard(selectedContacts[0])
-      const name = selectedContacts[0].name || 'contact'
-      downloadFile(content, `${name}.vcf`, 'text/vcard')
+      // 单人直接下载
+      const c = selectedContacts[0]
+      const content = generateSingleVCard(c)
+      downloadFile(content, `${c.name || 'contact'}.vcf`, 'text/vcard')
     } else {
-      await downloadVCardsAsZip(selectedContacts)
+      // 多人进入逐个下载模式：先下载第一个
+      setExportIndex(0)
+      const c = selectedContacts[0]
+      const content = generateSingleVCard(c)
+      downloadFile(content, `${c.name || 'contact'}.vcf`, 'text/vcard')
     }
+  }
+
+  /** 下载下一个 */
+  const handleNextVCard = () => {
+    if (exportIndex === null) return
+    const nextIndex = exportIndex + 1
+    if (nextIndex >= selectedContacts.length) {
+      // 全部完成
+      setExportIndex(null)
+      return
+    }
+    setExportIndex(nextIndex)
+    const c = selectedContacts[nextIndex]
+    const content = generateSingleVCard(c)
+    downloadFile(content, `${c.name || 'contact'}.vcf`, 'text/vcard')
+  }
+
+  /** 取消导出流程 */
+  const handleCancelExport = () => {
+    setExportIndex(null)
   }
 
   /** 导出 CSV */
@@ -35,6 +66,84 @@ export default function ExportPanel({ contacts, allContacts, selectedIds, onTogg
     downloadFile(content, `peercard_contacts_${selectedContacts.length}.csv`, 'text/csv')
   }
 
+  // 逐个导出进行中 — 显示导出进度面板
+  if (isExporting) {
+    const current = selectedContacts[exportIndex]
+    const isLast = exportIndex >= selectedContacts.length - 1
+
+    return (
+      <div className="rounded-2xl border-2 border-primary-300 bg-gradient-to-r from-primary-50 to-white shadow-lg overflow-hidden">
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-dark-800 flex items-center gap-2">
+              <svg className="w-4 h-4 text-primary-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              正在导出 vCard
+            </h2>
+            <span className="text-xs text-dark-500 font-medium">
+              {exportIndex + 1} / {selectedContacts.length}
+            </span>
+          </div>
+
+          {/* 进度条 */}
+          <div className="h-1.5 bg-dark-100 rounded-full mb-3">
+            <div
+              className="h-full bg-primary-500 rounded-full transition-all duration-300"
+              style={{ width: `${((exportIndex + 1) / selectedContacts.length) * 100}%` }}
+            />
+          </div>
+
+          {/* 当前联系人信息 */}
+          <div className="bg-white rounded-lg border border-dark-100 px-4 py-3 mb-3">
+            <p className="text-sm font-medium text-dark-800">
+              {current?.name || '未知联系人'}
+            </p>
+            {current?.organization && (
+              <p className="text-xs text-dark-500">{current.organization}</p>
+            )}
+            <p className="text-xs text-dark-400 mt-1">
+              请在系统弹窗中确认导入此联系人
+            </p>
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={handleCancelExport}
+              className="btn-secondary text-sm"
+            >
+              取消
+            </button>
+            {isLast ? (
+              <button
+                onClick={handleCancelExport}
+                className="btn-success text-sm gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                全部完成
+              </button>
+            ) : (
+              <button
+                onClick={handleNextVCard}
+                className="btn-success text-sm gap-1.5"
+              >
+                下一个
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 默认导出面板
   return (
     <div className={`
       rounded-2xl border-2 overflow-hidden transition-all duration-300
@@ -81,7 +190,7 @@ export default function ExportPanel({ contacts, allContacts, selectedIds, onTogg
             )}
 
             <button
-              onClick={handleExportVCard}
+              onClick={handleStartExport}
               disabled={!hasSelected}
               className={`
                 btn-success gap-1.5 text-sm
@@ -102,7 +211,7 @@ export default function ExportPanel({ contacts, allContacts, selectedIds, onTogg
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M10.875 12h-1.5m1.5 0c.621 0 1.125.504 1.125 1.125M12 12h7.5m-7.5 0c0 .621.504 1.125 1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 0v.375" />
+                  d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504 1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M10.875 12h-1.5m1.5 0c.621 0 1.125.504 1.125 1.125M12 12h7.5m-7.5 0c0 .621.504 1.125 1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 0v.375" />
               </svg>
               导出 CSV
             </button>
