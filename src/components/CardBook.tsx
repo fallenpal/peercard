@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { StoredContact } from '../types/contact'
 import { getAllContacts } from '../lib/db'
 
@@ -26,7 +26,6 @@ function groupByDate(contacts: StoredContact[]): Map<string, StoredContact[]> {
 export default function CardBook({ onSelectContact, onBack }: CardBookProps) {
   const [contacts, setContacts] = useState<StoredContact[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
 
   useEffect(() => {
@@ -47,13 +46,6 @@ export default function CardBook({ onSelectContact, onBack }: CardBookProps) {
 
   const grouped = useMemo(() => groupByDate(filtered), [filtered])
 
-  const handleSearchToggle = useCallback(() => {
-    setSearchOpen(prev => {
-      if (prev) setQuery('')
-      return !prev
-    })
-  }, [])
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -64,12 +56,12 @@ export default function CardBook({ onSelectContact, onBack }: CardBookProps) {
 
   return (
     <div className="min-h-[60vh]">
-      {/* 顶部栏 */}
-      <div className="flex items-center justify-between mb-4">
+      {/* 顶部标题 */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="text-dark-400 hover:text-white transition-colors text-sm"
+            className="text-dark-500 hover:text-dark-800 transition-colors text-sm"
           >
             ← 返回
           </button>
@@ -78,31 +70,22 @@ export default function CardBook({ onSelectContact, onBack }: CardBookProps) {
             <span className="text-dark-400 text-base font-normal ml-2">({contacts.length}张)</span>
           </h2>
         </div>
-        <button
-          onClick={handleSearchToggle}
-          className="p-2 rounded-lg hover:bg-dark-200 transition-colors"
-          title="搜索名片"
-        >
-          <svg className="w-5 h-5 text-dark-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
       </div>
 
-      {/* 搜索栏 */}
-      {searchOpen && (
-        <div className="mb-4 animate-fade-in">
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="搜索姓名、公司、电话、邮箱..."
-            className="input-field"
-            autoFocus
-          />
-        </div>
-      )}
+      {/* 搜索框 — 常驻 */}
+      <div className="mb-4 relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="搜索姓名、公司、电话、邮箱..."
+          className="input-field !pl-9"
+        />
+      </div>
 
       {/* 空状态 */}
       {filtered.length === 0 && (

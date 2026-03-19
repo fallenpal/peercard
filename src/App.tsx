@@ -17,6 +17,7 @@ function App() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [detailContactId, setDetailContactId] = useState<string | null>(null)
   const processingRef = useRef(false)
+  const bottomCameraRef = useRef<HTMLInputElement>(null)
 
   /** 预览弹窗状态：当前正在预览的联系人 ID */
   const [previewContactId, setPreviewContactId] = useState<string | null>(null)
@@ -235,17 +236,6 @@ function App() {
               <p className="text-xs text-dark-400 hidden sm:block">名片识别 · 快速录入通讯录</p>
             </div>
           </button>
-          <button
-            onClick={() => setCurrentView('cardbook')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white"
-            title="名片夹"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <span className="hidden sm:inline">名片夹</span>
-          </button>
           <div className="flex items-center gap-3">
             {currentView === 'editor' && (
               <button
@@ -266,7 +256,7 @@ function App() {
       </header>
 
       {/* 主内容区 */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 pb-24">
         {currentView === 'cardbook' ? (
           <CardBook
             onSelectContact={(id) => { setDetailContactId(id); setCurrentView('carddetail') }}
@@ -319,6 +309,53 @@ function App() {
           )
         )}
       </main>
+
+      {/* 底部 Tab Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-dark-200 shadow-lg z-40">
+        <div className="max-w-7xl mx-auto flex">
+          <button
+            onClick={() => bottomCameraRef.current?.click()}
+            className="flex-1 flex flex-col items-center gap-1 py-3 text-dark-500 hover:text-primary-700 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+            </svg>
+            <span className="text-xs font-medium">拍照</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('cardbook')}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
+              currentView === 'cardbook' || currentView === 'carddetail'
+                ? 'text-primary-700'
+                : 'text-dark-500 hover:text-primary-700'
+            }`}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            <span className="text-xs font-medium">名片夹</span>
+          </button>
+        </div>
+        {/* 底部拍照隐藏 input */}
+        <input
+          ref={bottomCameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              handleFilesAdded(Array.from(e.target.files))
+              e.target.value = ''
+              if (currentView !== 'upload') setCurrentView('upload')
+            }
+          }}
+          className="hidden"
+        />
+      </nav>
 
       {/* 识别成功预览弹窗 */}
       {previewContact && previewContact.status === 'completed' && (
