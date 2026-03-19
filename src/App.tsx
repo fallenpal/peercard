@@ -40,6 +40,30 @@ function AppInner() {
     supabase.rpc('increment_visits').then(() => {}, () => {})
   }, [])
 
+  /** 登录后自动把当前会话中已识别的名片补存到云端 */
+  useEffect(() => {
+    if (!user) return
+    const completed = contacts.filter(c => c.status === 'completed')
+    if (completed.length === 0) return
+
+    completed.forEach(c => {
+      dbSave(user.id, {
+        id: c.id,
+        image_path: null,
+        createdAt: c.createdAt || Date.now(),
+        name: c.name,
+        organization: c.organization,
+        title: c.title,
+        emails: c.emails,
+        phones: c.phones,
+        url: c.url,
+        address: c.address,
+        notes: c.notes,
+      }, c.imageFile).catch(err => console.error('Sync to cloud failed:', err))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   /** 处理新上传的文件 */
   const handleFilesAdded = useCallback((files: File[]) => {
     const newContacts: Contact[] = files.map(file => ({
