@@ -29,6 +29,8 @@ export interface Contact {
   url: string;
   /** 地址（VCF ADR 字段） */
   address: string;
+  /** 创建时间戳 */
+  createdAt?: number;
 }
 
 /** AI Vision API 返回的识别结果 */
@@ -44,5 +46,20 @@ export interface RecognizeResult {
   address: string | null;
 }
 
+/** 持久化存储用接口（IndexedDB） */
+export interface StoredContact {
+  id: string;
+  imageBlob: Blob;
+  createdAt: number;
+  name: string | null;
+  organization: string | null;
+  title: string | null;
+  emails: string[];
+  phones: string[];
+  notes: string;
+  url: string;
+  address: string;
+}
+
 /** 应用视图状态 */
-export type AppView = 'upload' | 'editor';
+export type AppView = 'upload' | 'editor' | 'cardbook' | 'carddetail';

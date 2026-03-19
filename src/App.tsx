@@ -5,13 +5,17 @@ import CardQueue from './components/CardQueue'
 import CardEditor from './components/CardEditor'
 import ExportPanel from './components/ExportPanel'
 import RecognizePreview from './components/RecognizePreview'
+import CardBook from './components/CardBook'
+import CardDetail from './components/CardDetail'
 import { recognizeCard } from './lib/recognize'
+import { saveContact as dbSave } from './lib/db'
 
 function App() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [currentView, setCurrentView] = useState<AppView>('upload')
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [detailContactId, setDetailContactId] = useState<string | null>(null)
   const processingRef = useRef(false)
 
   /** 预览弹窗状态：当前正在预览的联系人 ID */
@@ -74,6 +78,7 @@ function App() {
       const contact = contacts[pendingIndex]
       try {
         const result = await recognizeCard(contact.imageFile)
+        const now = Date.now()
         setContacts(prev => prev.map((c, i) =>
           i === pendingIndex
             ? {
@@ -86,9 +91,24 @@ function App() {
                 phones: result.phones,
                 url: result.url || '',
                 address: result.address || '',
+                createdAt: now,
               }
             : c
         ))
+        // 持久化到 IndexedDB
+        dbSave({
+          id: contact.id,
+          imageBlob: contact.imageFile,
+          createdAt: now,
+          name: result.name,
+          organization: result.organization,
+          title: result.title,
+          emails: result.emails,
+          phones: result.phones,
+          url: result.url || '',
+          address: result.address || '',
+          notes: '',
+        }).catch(err => console.error('IndexedDB save failed:', err))
         // 识别成功：加入预览队列
         previewQueueRef.current.push(contact.id)
         // 自动勾选已完成的联系人
@@ -215,6 +235,17 @@ function App() {
               <p className="text-xs text-dark-400 hidden sm:block">名片识别 · 快速录入通讯录</p>
             </div>
           </button>
+          <button
+            onClick={() => setCurrentView('cardbook')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white"
+            title="名片夹"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span className="hidden sm:inline">名片夹</span>
+          </button>
           <div className="flex items-center gap-3">
             {currentView === 'editor' && (
               <button
@@ -236,7 +267,18 @@ function App() {
 
       {/* 主内容区 */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
-        {currentView === 'upload' ? (
+        {currentView === 'cardbook' ? (
+          <CardBook
+            onSelectContact={(id) => { setDetailContactId(id); setCurrentView('carddetail') }}
+            onBack={() => setCurrentView('upload')}
+          />
+        ) : currentView === 'carddetail' && detailContactId ? (
+          <CardDetail
+            contactId={detailContactId}
+            onBack={() => setCurrentView('cardbook')}
+            onDeleted={() => setCurrentView('cardbook')}
+          />
+        ) : currentView === 'upload' ? (
           <div className="space-y-6">
             {/* 上传区 */}
             <UploadZone onFilesAdded={handleFilesAdded} hasContacts={contacts.length > 0} />
