@@ -22,6 +22,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
   const [phones, setPhones] = useState<string[]>(
     contact.phones.length > 0 ? [...contact.phones] : ['']
   )
+  const [asn, setAsn] = useState(contact.asn || '')
   const [url, setUrl] = useState(contact.url || '')
   const [address, setAddress] = useState(contact.address || '')
   const [notes, setNotes] = useState(contact.notes || '')
@@ -31,6 +32,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
     onConfirm({
       name: name.trim() || null,
       organization: organization.trim() || null,
+      asn: asn.trim(),
       title: title.trim() || null,
       emails: emails.filter(e => e.trim().length > 0),
       phones: phones.filter(p => p.trim().length > 0),
@@ -149,6 +151,20 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                       className="input-field"
                     />
                   </div>
+                </div>
+
+                {/* ASN */}
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
+                    <span>🌐</span> ASN <span className="text-xs text-dark-400 font-normal">(选填)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={asn}
+                    onChange={e => setAsn(e.target.value)}
+                    placeholder="如 AS13335、AS9808"
+                    className="input-field"
+                  />
                 </div>
               </div>
 
