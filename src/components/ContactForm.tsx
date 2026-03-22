@@ -67,6 +67,17 @@ export default function ContactForm({ contact, onUpdate }: ContactFormProps) {
         />
       </FieldGroup>
 
+      {/* ASN */}
+      <FieldGroup label="ASN" icon="🌐">
+        <input
+          type="text"
+          value={contact.asn || ''}
+          onChange={e => onUpdate({ asn: e.target.value })}
+          placeholder="如 AS13335、AS9808（选填）"
+          className="input-field"
+        />
+      </FieldGroup>
+
       {/* 职位 */}
       <FieldGroup label="职位" icon="💼">
         <input

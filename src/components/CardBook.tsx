@@ -53,7 +53,7 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
     if (!query.trim()) return contacts
     const q = query.toLowerCase().trim()
     return contacts.filter(c => {
-      const fields = [c.name, c.organization, c.title, ...c.emails, ...c.phones, c.address]
+      const fields = [c.name, c.organization, c.title, c.asn, ...c.emails, ...c.phones, c.address]
       return fields.some(f => f && f.toLowerCase().includes(q))
     })
   }, [contacts, query])

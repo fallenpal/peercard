@@ -37,6 +37,11 @@ export function generateSingleVCard(contact: Contact): string {
     lines.push(`ORG:${escapeVCard(contact.organization)}`)
   }
 
+  // ASN (自定义扩展字段)
+  if (contact.asn && contact.asn.trim()) {
+    lines.push(`X-ASN:${escapeVCard(contact.asn.trim())}`)
+  }
+
   // 职位 (TITLE)
   if (contact.title) {
     lines.push(`TITLE:${escapeVCard(contact.title)}`)

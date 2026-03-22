@@ -22,6 +22,7 @@ function generateVCardFromStored(c: StoredContact): string {
       : `N:${esc(c.name)};;;;`)
   }
   if (c.organization) lines.push(`ORG:${esc(c.organization)}`)
+  if (c.asn?.trim()) lines.push(`X-ASN:${esc(c.asn.trim())}`)
   if (c.title) lines.push(`TITLE:${esc(c.title)}`)
   c.phones.forEach(p => p.trim() && lines.push(`TEL;TYPE=WORK:${esc(p.trim())}`))
   c.emails.forEach(e => e.trim() && lines.push(`EMAIL;TYPE=WORK:${esc(e.trim())}`))
@@ -100,6 +101,7 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
         <FieldRow label="姓名" value={contact.name} />
         <FieldRow label="职位" value={contact.title} />
         <FieldRow label="公司" value={contact.organization} />
+        <FieldRow label="ASN" value={contact.asn} />
         {contact.phones.map((p, i) => (
           <FieldRow key={`phone-${i}`} label={i === 0 ? '电话' : ''} value={p}>
             <a href={`tel:${p}`} className="text-primary-700 hover:underline">{p}</a>

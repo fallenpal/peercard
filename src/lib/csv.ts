@@ -14,11 +14,12 @@ function escapeCsvField(value: string): string {
  * 生成 CSV 文件内容
  */
 export function generateCSV(contacts: Contact[]): string {
-  const headers = ['Name', 'Organization', 'Title', 'Emails', 'Phones', 'URL', 'Address', 'Notes']
+  const headers = ['Name', 'Organization', 'ASN', 'Title', 'Emails', 'Phones', 'URL', 'Address', 'Notes']
 
   const rows = contacts.map(contact => [
     escapeCsvField(contact.name || ''),
     escapeCsvField(contact.organization || ''),
+    escapeCsvField(contact.asn || ''),
     escapeCsvField(contact.title || ''),
     escapeCsvField(contact.emails.join('; ')),
     escapeCsvField(contact.phones.join('; ')),

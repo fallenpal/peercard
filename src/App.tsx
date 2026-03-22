@@ -65,6 +65,7 @@ function AppInner() {
         createdAt: c.createdAt || Date.now(),
         name: c.name,
         organization: c.organization,
+        asn: c.asn,
         title: c.title,
         emails: c.emails,
         phones: c.phones,
@@ -91,6 +92,7 @@ function AppInner() {
       notes: '',
       url: '',
       address: '',
+      asn: '',
     }))
     setContacts(prev => [...prev, ...newContacts])
   }, [])
@@ -133,6 +135,7 @@ function AppInner() {
                 phones: result.phones,
                 url: result.url || '',
                 address: result.address || '',
+                asn: '',
                 createdAt: now,
               }
             : c
@@ -150,6 +153,7 @@ function AppInner() {
             phones: result.phones,
             url: result.url || '',
             address: result.address || '',
+            asn: '',
             notes: '',
           }, contact.imageFile).catch(err => console.error('Cloud save failed:', err))
         }

@@ -17,6 +17,8 @@ export interface Contact {
   name: string | null;
   /** 公司 */
   organization: string | null;
+  /** ASN（可选，人工填写） */
+  asn: string;
   /** 职位 */
   title: string | null;
   /** 邮箱列表 */
@@ -54,6 +56,7 @@ export interface StoredContact {
   createdAt: number;
   name: string | null;
   organization: string | null;
+  asn: string;
   title: string | null;
   emails: string[];
   phones: string[];
