@@ -22,6 +22,7 @@ function AppInner() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [detailContactId, setDetailContactId] = useState<string | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'reset'>('login')
   const processingRef = useRef(false)
   const bottomCameraRef = useRef<HTMLInputElement>(null)
 
@@ -38,6 +39,17 @@ function AppInner() {
   /** 页面加载时 increment visit count */
   useEffect(() => {
     supabase.rpc('increment_visits').then(() => {}, () => {})
+  }, [])
+
+  /** 检测密码重置回调 */
+  useEffect(() => {
+    if (window.location.hash.includes('reset-password')) {
+      // Supabase 会自动从 URL fragment 恢复 session
+      setAuthModalMode('reset')
+      setShowAuthModal(true)
+      // 清除 hash
+      window.history.replaceState(null, '', window.location.pathname)
+    }
   }, [])
 
   /** 登录后自动把当前会话中已识别的名片补存到云端 */
@@ -412,8 +424,9 @@ function AppInner() {
       {/* 登录弹窗 */}
       {showAuthModal && (
         <AuthModal
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => { setShowAuthModal(false); setCurrentView('cardbook') }}
+          initialMode={authModalMode}
+          onClose={() => { setShowAuthModal(false); setAuthModalMode('login') }}
+          onSuccess={() => { setShowAuthModal(false); setAuthModalMode('login'); setCurrentView('cardbook') }}
         />
       )}
     </div>
