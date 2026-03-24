@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 /** 支持的图片格式 */
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif']
@@ -10,6 +11,7 @@ interface UploadZoneProps {
 }
 
 export default function UploadZone({ onFilesAdded, hasContacts = false }: UploadZoneProps) {
+  const { t } = useTranslation()
   const [isDragOver, setIsDragOver] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -31,7 +33,7 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
     })
 
     if (invalidFiles.length > 0) {
-      setErrorMsg(`以下文件格式不支持：${invalidFiles.join('、')}。仅支持 JPG、PNG、HEIC 格式。`)
+      setErrorMsg(t('upload.unsupported', { files: invalidFiles.join(', ') }))
       setTimeout(() => setErrorMsg(null), 5000)
     }
 
@@ -39,7 +41,7 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
       onFilesAdded(validFiles)
       setErrorMsg(null)
     }
-  }, [onFilesAdded])
+  }, [onFilesAdded, t])
 
   /** 拖拽事件处理 */
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -67,7 +69,7 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       validateAndAddFiles(e.target.files)
-      e.target.value = '' // 重置 input，允许重复选择同一文件
+      e.target.value = ''
     }
   }, [validateAndAddFiles])
 
@@ -104,15 +106,15 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
           </div>
 
           <h3 className={`${hasContacts ? 'text-sm' : 'text-lg'} font-semibold text-dark-800 mb-1`}>
-            {isDragOver ? '松开即可上传' : (hasContacts ? '继续上传更多名片' : '上传名片照片')}
+            {isDragOver ? t('upload.drop_here') : (hasContacts ? t('upload.continue') : t('upload.title'))}
           </h3>
           {!hasContacts && (
             <p className="text-sm text-dark-500 mb-4">
-              拖拽图片到此处，或点击选择文件
+              {t('upload.drag_hint')}
             </p>
           )}
           <p className="text-xs text-dark-400">
-            支持 JPG、PNG、HEIC 格式 · 可同时上传多张
+            {t('upload.format_hint')}
           </p>
 
           {/* 移动端相机按钮 */}
@@ -127,7 +129,7 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
               </svg>
-              拍照识别
+              {t('upload.camera')}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
@@ -137,7 +139,7 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
               </svg>
-              从相册选择
+              {t('upload.album')}
             </button>
           </div>
         </div>
@@ -181,6 +183,14 @@ export default function UploadZone({ onFilesAdded, hasContacts = false }: Upload
 
 /** 首次使用引导 */
 function EmptyGuide() {
+  const { t } = useTranslation()
+
+  const steps = [
+    { step: '1', icon: '📸', title: t('upload.step1_title'), desc: t('upload.step1_desc') },
+    { step: '2', icon: '🤖', title: t('upload.step2_title'), desc: t('upload.step2_desc') },
+    { step: '3', icon: '📥', title: t('upload.step3_title'), desc: t('upload.step3_desc') },
+  ]
+
   return (
     <div className="bg-white rounded-2xl border border-dark-200 p-6">
       <h3 className="text-sm font-semibold text-dark-700 mb-4 flex items-center gap-2">
@@ -188,14 +198,10 @@ function EmptyGuide() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
         </svg>
-        快速上手
+        {t('upload.guide_title')}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { step: '1', icon: '📸', title: '上传名片', desc: '拖拽或点击上传名片照片，支持一次多张' },
-          { step: '2', icon: '🤖', title: 'AI 自动识别', desc: '系统自动提取姓名、公司、邮箱、电话等信息' },
-          { step: '3', icon: '📥', title: '导出通讯录', desc: '确认后导出 vCard 或 CSV，导入手机或 Excel' },
-        ].map(item => (
+        {steps.map(item => (
           <div key={item.step} className="flex gap-3 p-3 rounded-xl bg-dark-50">
             <div className="text-2xl">{item.icon}</div>
             <div>

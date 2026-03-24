@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../lib/auth'
 
 interface AuthModalProps {
@@ -8,6 +9,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }: AuthModalProps) {
+  const { t } = useTranslation()
   const { signIn, signUp, resetPassword, updatePassword } = useAuth()
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>(initialMode)
   const [email, setEmail] = useState('')
@@ -29,14 +31,14 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
       if (err) {
         setError(err)
       } else {
-        setSuccess('重置链接已发送到邮箱，请查收')
+        setSuccess(t('auth.reset_link_sent'))
       }
       return
     }
 
     if (mode === 'reset') {
       if (password !== confirmPassword) {
-        setError('两次输入的密码不一致')
+        setError(t('auth.password_mismatch'))
         setSubmitting(false)
         return
       }
@@ -45,7 +47,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
       if (err) {
         setError(err)
       } else {
-        setSuccess('密码已重置')
+        setSuccess(t('auth.password_reset_done'))
         setTimeout(() => onSuccess(), 1500)
       }
       return
@@ -69,17 +71,17 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
   }
 
   const titles: Record<string, string> = {
-    login: '登录',
-    register: '注册',
-    forgot: '找回密码',
-    reset: '设置新密码',
+    login: t('auth.login'),
+    register: t('auth.register'),
+    forgot: t('auth.forgot'),
+    reset: t('auth.reset'),
   }
 
-  const subtitles: Record<string, string> = {
-    login: '登录后可使用名片夹功能，数据长期保存',
-    register: '登录后可使用名片夹功能，数据长期保存',
-    forgot: '输入注册邮箱，我们将发送重置链接',
-    reset: '请输入新密码',
+  const subtitleKeys: Record<string, string> = {
+    login: 'auth.login_subtitle',
+    register: 'auth.register_subtitle',
+    forgot: 'auth.forgot_subtitle',
+    reset: 'auth.reset_subtitle',
   }
 
   return (
@@ -94,7 +96,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
             {titles[mode]}
           </h2>
           <p className="text-sm text-dark-500 mt-1">
-            {subtitles[mode]}
+            {t(subtitleKeys[mode])}
           </p>
         </div>
 
@@ -107,7 +109,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
                 mode === 'login' ? 'bg-white text-dark-900 shadow-sm' : 'text-dark-500'
               }`}
             >
-              登录
+              {t('auth.login')}
             </button>
             <button
               onClick={() => switchMode('register')}
@@ -115,7 +117,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
                 mode === 'register' ? 'bg-white text-dark-900 shadow-sm' : 'text-dark-500'
               }`}
             >
-              注册
+              {t('auth.register')}
             </button>
           </div>
         )}
@@ -125,13 +127,13 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
           {/* 邮箱 — login / register / forgot */}
           {mode !== 'reset' && (
             <div>
-              <label className="block text-sm font-medium text-dark-700 mb-1">邮箱</label>
+              <label className="block text-sm font-medium text-dark-700 mb-1">{t('auth.email')}</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder={t('auth.email_placeholder')}
                 className="input-field"
                 autoFocus
               />
@@ -142,7 +144,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
           {mode !== 'forgot' && (
             <div>
               <label className="block text-sm font-medium text-dark-700 mb-1">
-                {mode === 'reset' ? '新密码' : '密码'}
+                {mode === 'reset' ? t('auth.new_password') : t('auth.password')}
               </label>
               <input
                 type="password"
@@ -150,7 +152,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
                 minLength={6}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="至少 6 位"
+                placeholder={t('auth.password_placeholder')}
                 className="input-field"
                 autoFocus={mode === 'reset'}
               />
@@ -160,14 +162,14 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
           {/* 确认密码 — reset */}
           {mode === 'reset' && (
             <div>
-              <label className="block text-sm font-medium text-dark-700 mb-1">确认新密码</label>
+              <label className="block text-sm font-medium text-dark-700 mb-1">{t('auth.confirm_password')}</label>
               <input
                 type="password"
                 required
                 minLength={6}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="再次输入新密码"
+                placeholder={t('auth.confirm_password_placeholder')}
                 className="input-field"
               />
             </div>
@@ -190,11 +192,11 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
             disabled={submitting}
             className="btn-primary w-full"
           >
-            {submitting ? '处理中...' : (
-              mode === 'login' ? '登录' :
-              mode === 'register' ? '注册' :
-              mode === 'forgot' ? '发送重置链接' :
-              '确认重置'
+            {submitting ? t('auth.submitting') : (
+              mode === 'login' ? t('auth.login') :
+              mode === 'register' ? t('auth.register') :
+              mode === 'forgot' ? t('auth.send_reset_link') :
+              t('auth.confirm_reset')
             )}
           </button>
         </form>
@@ -205,7 +207,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
             onClick={() => switchMode('forgot')}
             className="mt-3 w-full text-center text-sm text-primary-600 hover:text-primary-800 transition-colors"
           >
-            忘记密码？
+            {t('auth.forgot_password')}
           </button>
         )}
 
@@ -215,7 +217,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
             onClick={() => switchMode('login')}
             className="mt-3 w-full text-center text-sm text-primary-600 hover:text-primary-800 transition-colors"
           >
-            ← 返回登录
+            {t('auth.back_to_login')}
           </button>
         )}
 
@@ -224,7 +226,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' }:
           onClick={onClose}
           className="mt-4 w-full text-center text-sm text-dark-400 hover:text-dark-600 transition-colors"
         >
-          暂不登录，继续体验
+          {t('auth.skip_login')}
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Contact } from '../types/contact'
 import ContactForm from './ContactForm'
 import { generateSingleVCard, downloadFile } from '../lib/vcard'
@@ -24,6 +25,7 @@ export default function CardEditor({
   currentNum,
   totalNum,
 }: CardEditorProps) {
+  const { t } = useTranslation()
   const [imageScale, setImageScale] = useState(1)
 
   /** 缩放控制 */
@@ -53,7 +55,7 @@ export default function CardEditor({
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
-            上一张
+            {t('editor.prev')}
           </button>
           <span className="text-sm text-dark-500 tabular-nums">
             {currentNum} / {totalNum}
@@ -63,7 +65,7 @@ export default function CardEditor({
             disabled={!hasNext}
             className="btn-secondary !px-3 !py-1.5 text-xs gap-1"
           >
-            下一张
+            {t('editor.next')}
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
@@ -78,7 +80,7 @@ export default function CardEditor({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>
-          导出 vCard
+          {t('action.export_vcard')}
         </button>
       </div>
 
@@ -92,13 +94,13 @@ export default function CardEditor({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
               </svg>
-              名片原图
+              {t('editor.original')}
             </h3>
             <div className="flex items-center gap-1">
               <button
                 onClick={handleZoomOut}
                 className="p-1.5 rounded-md text-dark-500 hover:bg-dark-100 hover:text-dark-700 transition-colors"
-                title="缩小"
+                title={t('editor.zoom_out')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -107,16 +109,16 @@ export default function CardEditor({
               </button>
               <button
                 onClick={handleZoomReset}
-                className="px-2 py-0.5 rounded-md text-xs text-dark-500 hover:bg-dark-100 hover:text-dark-700 
+                className="px-2 py-0.5 rounded-md text-xs text-dark-500 hover:bg-dark-100 hover:text-dark-700
                   tabular-nums transition-colors"
-                title="重置缩放"
+                title={t('editor.zoom_reset')}
               >
                 {Math.round(imageScale * 100)}%
               </button>
               <button
                 onClick={handleZoomIn}
                 className="p-1.5 rounded-md text-dark-500 hover:bg-dark-100 hover:text-dark-700 transition-colors"
-                title="放大"
+                title={t('editor.zoom_in')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -128,7 +130,7 @@ export default function CardEditor({
           <div className="p-4 overflow-auto bg-dark-50" style={{ maxHeight: '70vh' }}>
             <img
               src={contact.imageUrl}
-              alt="名片原图"
+              alt={t('editor.original')}
               className="rounded-lg shadow-sm mx-auto transition-transform duration-200 origin-center"
               style={{ transform: `scale(${imageScale})` }}
               draggable={false}
@@ -144,8 +146,8 @@ export default function CardEditor({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
               </svg>
-              识别结果
-              <span className="text-dark-400 font-normal text-xs">（可直接编辑修正）</span>
+              {t('editor.result')}
+              <span className="text-dark-400 font-normal text-xs">{t('editor.result_hint')}</span>
             </h3>
           </div>
           <div className="p-4 overflow-y-auto" style={{ maxHeight: '70vh' }}>

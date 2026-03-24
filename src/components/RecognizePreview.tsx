@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Contact } from '../types/contact'
 
 interface RecognizePreviewProps {
@@ -12,6 +13,7 @@ interface RecognizePreviewProps {
  * 展示识别结果，允许用户在确认前快速编辑
  */
 export default function RecognizePreview({ contact, onConfirm, onClose }: RecognizePreviewProps) {
+  const { t } = useTranslation()
   // 本地编辑状态（确认后才同步到父组件）
   const [name, setName] = useState(contact.name || '')
   const [organization, setOrganization] = useState(contact.organization || '')
@@ -77,8 +79,8 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-dark-800">识别完成</h2>
-              <p className="text-xs text-dark-500">请确认或编辑以下识别结果</p>
+              <h2 className="text-lg font-semibold text-dark-800">{t('preview.title')}</h2>
+              <p className="text-xs text-dark-500">{t('preview.subtitle')}</p>
             </div>
           </div>
           <button
@@ -98,7 +100,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
             <div className="lg:col-span-2 bg-dark-50 p-4 flex items-start justify-center border-b lg:border-b-0 lg:border-r border-dark-200">
               <img
                 src={contact.imageUrl}
-                alt="名片原图"
+                alt={t('editor.original')}
                 className="rounded-xl shadow-md max-h-[50vh] object-contain w-full"
                 draggable={false}
               />
@@ -108,18 +110,18 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
             <div className="lg:col-span-3 p-6 space-y-4">
               {/* 基本信息 */}
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-dark-500 uppercase tracking-wider">基本信息</h3>
+                <h3 className="text-xs font-semibold text-dark-500 uppercase tracking-wider">{t('preview.basic_info')}</h3>
 
                 {/* 姓名 */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>👤</span> 姓名
+                    <span>👤</span> {t('field.name')}
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    placeholder="联系人姓名"
+                    placeholder={t('placeholder.name')}
                     className="input-field text-base font-medium"
                     autoFocus
                   />
@@ -129,25 +131,25 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                      <span>🏢</span> 公司
+                      <span>🏢</span> {t('field.company')}
                     </label>
                     <input
                       type="text"
                       value={organization}
                       onChange={e => setOrganization(e.target.value)}
-                      placeholder="公司/组织名称"
+                      placeholder={t('placeholder.company')}
                       className="input-field"
                     />
                   </div>
                   <div>
                     <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                      <span>💼</span> 职位
+                      <span>💼</span> {t('field.title')}
                     </label>
                     <input
                       type="text"
                       value={title}
                       onChange={e => setTitle(e.target.value)}
-                      placeholder="职位头衔"
+                      placeholder={t('placeholder.job_title')}
                       className="input-field"
                     />
                   </div>
@@ -156,13 +158,13 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                 {/* ASN */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>🌐</span> ASN <span className="text-xs text-dark-400 font-normal">(选填)</span>
+                    <span>🌐</span> {t('field.asn')} <span className="text-xs text-dark-400 font-normal">({t('field.asn_optional')})</span>
                   </label>
                   <input
                     type="text"
                     value={asn}
                     onChange={e => setAsn(e.target.value)}
-                    placeholder="如 AS13335、AS9808"
+                    placeholder={t('placeholder.asn')}
                     className="input-field"
                   />
                 </div>
@@ -170,12 +172,12 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
 
               {/* 联系方式 */}
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-dark-500 uppercase tracking-wider">联系方式</h3>
+                <h3 className="text-xs font-semibold text-dark-500 uppercase tracking-wider">{t('preview.contact_info')}</h3>
 
                 {/* 邮箱 */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>✉️</span> 邮箱
+                    <span>✉️</span> {t('field.email')}
                   </label>
                   <div className="space-y-2">
                     {emails.map((email, i) => (
@@ -184,7 +186,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                           type="email"
                           value={email}
                           onChange={e => updateEmail(i, e.target.value)}
-                          placeholder="email@example.com"
+                          placeholder={t('placeholder.email')}
                           className="input-field flex-1"
                         />
                         {emails.length > 1 && (
@@ -206,7 +208,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
-                      添加邮箱
+                      {t('action.add_email')}
                     </button>
                   </div>
                 </div>
@@ -214,7 +216,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                 {/* 电话 */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>📱</span> 电话
+                    <span>📱</span> {t('field.phone')}
                   </label>
                   <div className="space-y-2">
                     {phones.map((phone, i) => (
@@ -223,7 +225,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                           type="tel"
                           value={phone}
                           onChange={e => updatePhone(i, e.target.value)}
-                          placeholder="+86 138-0000-0000"
+                          placeholder={t('placeholder.phone')}
                           className="input-field flex-1"
                         />
                         {phones.length > 1 && (
@@ -245,7 +247,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
-                      添加电话
+                      {t('action.add_phone')}
                     </button>
                   </div>
                 </div>
@@ -253,18 +255,18 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
 
               {/* VCF 扩展字段 */}
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-dark-500 uppercase tracking-wider">附加信息 (VCF 标准字段)</h3>
+                <h3 className="text-xs font-semibold text-dark-500 uppercase tracking-wider">{t('preview.extra_info')}</h3>
 
                 {/* 网站 URL */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>🌐</span> 网站 <span className="text-xs text-dark-400 font-normal">(URL)</span>
+                    <span>🌐</span> {t('field.website')} <span className="text-xs text-dark-400 font-normal">({t('field.url_tag')})</span>
                   </label>
                   <input
                     type="url"
                     value={url}
                     onChange={e => setUrl(e.target.value)}
-                    placeholder="https://example.com"
+                    placeholder={t('placeholder.website')}
                     className="input-field"
                   />
                 </div>
@@ -272,13 +274,13 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                 {/* 地址 */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>📍</span> 地址 <span className="text-xs text-dark-400 font-normal">(ADR)</span>
+                    <span>📍</span> {t('field.address')} <span className="text-xs text-dark-400 font-normal">({t('field.adr_tag')})</span>
                   </label>
                   <input
                     type="text"
                     value={address}
                     onChange={e => setAddress(e.target.value)}
-                    placeholder="输入联系人地址"
+                    placeholder={t('placeholder.address')}
                     className="input-field"
                   />
                 </div>
@@ -286,12 +288,12 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
                 {/* 备注 */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-dark-600 mb-1">
-                    <span>📝</span> 备注 <span className="text-xs text-dark-400 font-normal">(NOTE)</span>
+                    <span>📝</span> {t('field.notes')} <span className="text-xs text-dark-400 font-normal">({t('field.note_tag')})</span>
                   </label>
                   <textarea
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
-                    placeholder="添加备注，如：负责东南亚 peering、在 HKIX 有 presence、APRICOT 2025 认识"
+                    placeholder={t('placeholder.notes')}
                     rows={2}
                     className="input-field resize-none"
                   />
@@ -307,10 +309,10 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
             onClick={onClose}
             className="btn-secondary text-sm"
           >
-            稍后编辑
+            {t('preview.edit_later')}
           </button>
           <div className="flex items-center gap-3">
-            <p className="text-xs text-dark-400 hidden sm:block">确认后仍可在编辑视图中修改</p>
+            <p className="text-xs text-dark-400 hidden sm:block">{t('preview.confirm_hint')}</p>
             <button
               onClick={handleConfirm}
               className="btn-success text-sm gap-1.5 !px-6"
@@ -318,7 +320,7 @@ export default function RecognizePreview({ contact, onConfirm, onClose }: Recogn
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5" />
               </svg>
-              确认保存
+              {t('preview.confirm_save')}
             </button>
           </div>
         </div>

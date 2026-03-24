@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Contact, AppView } from './types/contact'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
@@ -15,6 +16,7 @@ import { recognizeCard } from './lib/recognize'
 import { saveContact as dbSave } from './lib/db'
 
 function AppInner() {
+  const { t, i18n } = useTranslation()
   const { user, signOut } = useAuth()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [currentView, setCurrentView] = useState<AppView>('upload')
@@ -36,6 +38,12 @@ function AppInner() {
     ? contacts.find(c => c.id === previewContactId) ?? null
     : null
 
+  /** 切换语言 */
+  const toggleLanguage = useCallback(() => {
+    const next = i18n.language?.startsWith('zh') ? 'en' : 'zh'
+    i18n.changeLanguage(next)
+  }, [i18n])
+
   /** 页面加载时 increment visit count */
   useEffect(() => {
     supabase.rpc('increment_visits').then(() => {}, () => {})
@@ -44,10 +52,8 @@ function AppInner() {
   /** 检测密码重置回调 */
   useEffect(() => {
     if (window.location.hash.includes('reset-password')) {
-      // Supabase 会自动从 URL fragment 恢复 session
       setAuthModalMode('reset')
       setShowAuthModal(true)
-      // 清除 hash
       window.history.replaceState(null, '', window.location.pathname)
     }
   }, [])
@@ -140,7 +146,6 @@ function AppInner() {
               }
             : c
         ))
-        // 已登录才持久化
         if (user) {
           dbSave(user.id, {
             id: contact.id,
@@ -164,7 +169,7 @@ function AppInner() {
           return prev
         })
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '识别失败，请重试'
+        const errorMessage = err instanceof Error ? err.message : t('app.recognize_failed')
         setContacts(prev => prev.map((c, i) =>
           i === pendingIndex
             ? { ...c, status: 'failed' as const, error: errorMessage }
@@ -175,7 +180,7 @@ function AppInner() {
       }
     }
     processNext()
-  }, [contacts, user])
+  }, [contacts, user, t])
 
   const handlePreviewConfirm = useCallback((updates: Partial<Contact>) => {
     if (previewContactId) {
@@ -260,7 +265,7 @@ function AppInner() {
             <span className="text-2xl">📇</span>
             <div className="text-left">
               <h1 className="text-xl font-bold tracking-tight">PeerCard</h1>
-              <p className="text-xs text-dark-400 hidden sm:block">名片识别 · 快速录入通讯录</p>
+              <p className="text-xs text-dark-400 hidden sm:block">{t('app.subtitle')}</p>
             </div>
           </button>
           <div className="flex items-center gap-3">
@@ -269,7 +274,7 @@ function AppInner() {
                 onClick={() => setCurrentView('upload')}
                 className="btn-secondary text-xs !bg-dark-700 !text-dark-200 hover:!bg-dark-600"
               >
-                ← 返回队列
+                {t('app.back_to_queue')}
               </button>
             )}
             {user ? (
@@ -281,7 +286,7 @@ function AppInner() {
                   onClick={signOut}
                   className="text-xs text-dark-500 hover:text-dark-300 transition-colors"
                 >
-                  登出
+                  {t('app.logout')}
                 </button>
               </div>
             ) : (
@@ -289,13 +294,20 @@ function AppInner() {
                 onClick={() => setShowAuthModal(true)}
                 className="text-xs text-dark-400 hover:text-white transition-colors"
               >
-                登录
+                {t('app.login')}
               </button>
             )}
+            {/* 语言切换按钮 */}
+            <button
+              onClick={toggleLanguage}
+              className="text-xs text-dark-400 hover:text-white transition-colors px-2 py-1 rounded border border-dark-600 hover:border-dark-400"
+            >
+              {t('lang.toggle')}
+            </button>
             {contacts.length > 0 && (
               <div className="text-xs text-dark-400">
                 <span className="text-emerald-400 font-medium">{completedContacts.length}</span>
-                <span> / {contacts.length} 已识别</span>
+                <span> / {contacts.length} {t('app.recognized')}</span>
               </div>
             )}
           </div>
@@ -369,7 +381,7 @@ function AppInner() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
             </svg>
-            <span className="text-xs font-medium">拍照</span>
+            <span className="text-xs font-medium">{t('tab.camera')}</span>
           </button>
           <button
             onClick={handleCardBookClick}
@@ -383,7 +395,7 @@ function AppInner() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
             </svg>
-            <span className="text-xs font-medium">名片夹</span>
+            <span className="text-xs font-medium">{t('tab.cardbook')}</span>
           </button>
           <button
             onClick={() => setCurrentView('about')}
@@ -397,7 +409,7 @@ function AppInner() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
             </svg>
-            <span className="text-xs font-medium">关于</span>
+            <span className="text-xs font-medium">{t('tab.about')}</span>
           </button>
         </div>
         <input

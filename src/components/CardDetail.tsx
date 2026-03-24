@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { StoredContact } from '../types/contact'
 import { getContact, deleteContact, saveContact } from '../lib/db'
 import { downloadFile } from '../lib/vcard'
@@ -34,6 +35,7 @@ function generateVCardFromStored(c: StoredContact): string {
 }
 
 export default function CardDetail({ userId, contactId, onBack, onDeleted }: CardDetailProps) {
+  const { t } = useTranslation()
   const [contact, setContact] = useState<StoredContact | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -107,11 +109,11 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
       setEditing(false)
     } catch (err) {
       console.error('Save failed:', err)
-      alert('保存失败，请重试')
+      alert(t('detail.save_failed'))
     } finally {
       setSaving(false)
     }
-  }, [contact, editName, editOrg, editAsn, editTitle, editPhones, editEmails, editUrl, editAddress, editNotes, userId])
+  }, [contact, editName, editOrg, editAsn, editTitle, editPhones, editEmails, editUrl, editAddress, editNotes, userId, t])
 
   const handleExportVCard = useCallback(() => {
     if (!contact) return
@@ -122,10 +124,10 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
 
   const handleDelete = useCallback(async () => {
     if (!contact) return
-    if (!confirm('确定要删除这张名片吗？')) return
+    if (!confirm(t('detail.confirm_delete'))) return
     await deleteContact(userId, contact.id)
     onDeleted()
-  }, [contact, onDeleted])
+  }, [contact, onDeleted, userId, t])
 
   if (loading) {
     return (
@@ -138,8 +140,8 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
   if (!contact) {
     return (
       <div className="text-center py-16 text-dark-400">
-        名片不存在
-        <button onClick={onBack} className="block mx-auto mt-4 btn-secondary">返回名片夹</button>
+        {t('detail.not_found')}
+        <button onClick={onBack} className="block mx-auto mt-4 btn-secondary">{t('detail.back_cardbook')}</button>
       </div>
     )
   }
@@ -151,7 +153,7 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
         onClick={onBack}
         className="text-dark-400 hover:text-dark-700 transition-colors text-sm"
       >
-        ← 返回名片夹
+        {t('action.back_cardbook')}
       </button>
 
       {/* 原始名片照片 */}
@@ -159,7 +161,7 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
         <div className="rounded-xl overflow-hidden shadow-md bg-dark-100">
           <img
             src={contact.image_url}
-            alt={contact.name || '名片'}
+            alt={contact.name || t('editor.original')}
             className="w-full object-contain max-h-80"
           />
         </div>
@@ -168,21 +170,21 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
       {/* 字段列表 */}
       {editing ? (
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
-          <EditField label="姓名" value={editName} onChange={setEditName} placeholder="联系人姓名" />
-          <EditField label="公司" value={editOrg} onChange={setEditOrg} placeholder="公司/组织名称" />
-          <EditField label="ASN" value={editAsn} onChange={setEditAsn} placeholder="如 AS13335（选填）" />
-          <EditField label="职位" value={editTitle} onChange={setEditTitle} placeholder="职位头衔" />
+          <EditField label={t('field.name')} value={editName} onChange={setEditName} placeholder={t('placeholder.name')} />
+          <EditField label={t('field.company')} value={editOrg} onChange={setEditOrg} placeholder={t('placeholder.company')} />
+          <EditField label={t('field.asn')} value={editAsn} onChange={setEditAsn} placeholder={t('placeholder.asn_detail')} />
+          <EditField label={t('field.title')} value={editTitle} onChange={setEditTitle} placeholder={t('placeholder.job_title')} />
 
           {/* 电话列表 */}
           <div>
-            <span className="text-sm text-dark-500 mb-1 block">电话</span>
+            <span className="text-sm text-dark-500 mb-1 block">{t('field.phone')}</span>
             {editPhones.map((p, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
                 <input
                   type="tel"
                   value={p}
                   onChange={e => { const a = [...editPhones]; a[i] = e.target.value; setEditPhones(a) }}
-                  placeholder="+86 138-0000-0000"
+                  placeholder={t('placeholder.phone')}
                   className="input-field flex-1"
                 />
                 {editPhones.length > 1 && (
@@ -200,20 +202,20 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              添加电话
+              {t('action.add_phone')}
             </button>
           </div>
 
           {/* 邮箱列表 */}
           <div>
-            <span className="text-sm text-dark-500 mb-1 block">邮箱</span>
+            <span className="text-sm text-dark-500 mb-1 block">{t('field.email')}</span>
             {editEmails.map((e, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
                 <input
                   type="email"
                   value={e}
                   onChange={ev => { const a = [...editEmails]; a[i] = ev.target.value; setEditEmails(a) }}
-                  placeholder="email@example.com"
+                  placeholder={t('placeholder.email')}
                   className="input-field flex-1"
                 />
                 {editEmails.length > 1 && (
@@ -231,18 +233,18 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              添加邮箱
+              {t('action.add_email')}
             </button>
           </div>
 
-          <EditField label="地址" value={editAddress} onChange={setEditAddress} placeholder="联系人地址" />
-          <EditField label="网站" value={editUrl} onChange={setEditUrl} placeholder="https://example.com" />
+          <EditField label={t('field.address')} value={editAddress} onChange={setEditAddress} placeholder={t('placeholder.address')} />
+          <EditField label={t('field.website')} value={editUrl} onChange={setEditUrl} placeholder={t('placeholder.website')} />
           <div>
-            <span className="text-sm text-dark-500 mb-1 block">备注</span>
+            <span className="text-sm text-dark-500 mb-1 block">{t('field.notes')}</span>
             <textarea
               value={editNotes}
               onChange={e => setEditNotes(e.target.value)}
-              placeholder="添加备注"
+              placeholder={t('placeholder.notes_short')}
               rows={3}
               className="input-field resize-none"
             />
@@ -250,29 +252,29 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm divide-y divide-dark-100">
-          <FieldRow label="姓名" value={contact.name} />
-          <FieldRow label="公司" value={contact.organization} />
-          <FieldRow label="ASN" value={contact.asn} />
-          <FieldRow label="职位" value={contact.title} />
+          <FieldRow label={t('field.name')} value={contact.name} />
+          <FieldRow label={t('field.company')} value={contact.organization} />
+          <FieldRow label={t('field.asn')} value={contact.asn} />
+          <FieldRow label={t('field.title')} value={contact.title} />
           {contact.phones.map((p, i) => (
-            <FieldRow key={`phone-${i}`} label={i === 0 ? '电话' : ''} value={p}>
+            <FieldRow key={`phone-${i}`} label={i === 0 ? t('field.phone') : ''} value={p}>
               <a href={`tel:${p}`} className="text-primary-700 hover:underline">{p}</a>
             </FieldRow>
           ))}
           {contact.emails.map((e, i) => (
-            <FieldRow key={`email-${i}`} label={i === 0 ? '邮箱' : ''} value={e}>
+            <FieldRow key={`email-${i}`} label={i === 0 ? t('field.email') : ''} value={e}>
               <a href={`mailto:${e}`} className="text-primary-700 hover:underline">{e}</a>
             </FieldRow>
           ))}
-          <FieldRow label="地址" value={contact.address} />
-          <FieldRow label="网站" value={contact.url}>
+          <FieldRow label={t('field.address')} value={contact.address} />
+          <FieldRow label={t('field.website')} value={contact.url}>
             {contact.url && (
               <a href={contact.url.startsWith('http') ? contact.url : `https://${contact.url}`}
                 target="_blank" rel="noreferrer"
                 className="text-primary-700 hover:underline">{contact.url}</a>
             )}
           </FieldRow>
-          <FieldRow label="备注" value={contact.notes} />
+          <FieldRow label={t('field.notes')} value={contact.notes} />
         </div>
       )}
 
@@ -283,26 +285,26 @@ export default function CardDetail({ userId, contactId, onBack, onDeleted }: Car
             onClick={() => setEditing(false)}
             className="btn-secondary flex-1"
           >
-            取消
+            {t('action.cancel')}
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
             className="btn-primary flex-1"
           >
-            {saving ? '保存中...' : '保存'}
+            {saving ? t('action.saving') : t('action.save')}
           </button>
         </div>
       ) : (
         <div className="flex gap-3">
           <button onClick={enterEdit} className="btn-secondary flex-1">
-            编辑
+            {t('action.edit')}
           </button>
           <button onClick={handleExportVCard} className="btn-primary flex-1">
-            导出 vCard
+            {t('action.export_vcard')}
           </button>
           <button onClick={handleDelete} className="btn-secondary flex-1 !text-red-600 hover:!bg-red-50">
-            删除
+            {t('action.delete')}
           </button>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Contact } from '../types/contact'
 
 interface CardQueueProps {
@@ -8,15 +9,8 @@ interface CardQueueProps {
   onToggleSelect: (contactId: string) => void
 }
 
-/** 状态标签配置 */
-const STATUS_CONFIG = {
-  pending: { label: '等待中', className: 'badge-pending', icon: '⏳' },
-  processing: { label: '识别中', className: 'badge-processing', icon: '' },
-  completed: { label: '已完成', className: 'badge-completed', icon: '✓' },
-  failed: { label: '失败', className: 'badge-failed', icon: '✕' },
-} as const
-
 export default function CardQueue({ contacts, onCardClick, onRetry, selectedIds, onToggleSelect }: CardQueueProps) {
+  const { t } = useTranslation()
   const completedCount = contacts.filter(c => c.status === 'completed').length
   const processingCount = contacts.filter(c => c.status === 'processing').length
   const failedCount = contacts.filter(c => c.status === 'failed').length
@@ -30,21 +24,21 @@ export default function CardQueue({ contacts, onCardClick, onRetry, selectedIds,
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
           </svg>
-          名片队列
-          <span className="text-dark-400 font-normal">({contacts.length}张)</span>
+          {t('queue.title')}
+          <span className="text-dark-400 font-normal">{t('queue.count', { count: contacts.length })}</span>
         </h2>
         <div className="flex items-center gap-3 text-xs text-dark-500">
           {processingCount > 0 && (
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              识别中 {processingCount}
+              {t('queue.processing')} {processingCount}
             </span>
           )}
           {completedCount > 0 && (
-            <span className="text-emerald-600 font-medium">✓ {completedCount} 已完成</span>
+            <span className="text-emerald-600 font-medium">✓ {completedCount} {t('queue.completed')}</span>
           )}
           {failedCount > 0 && (
-            <span className="text-red-500">✕ {failedCount} 失败</span>
+            <span className="text-red-500">✕ {failedCount} {t('queue.failed')}</span>
           )}
         </div>
       </div>
@@ -90,6 +84,15 @@ function CardItem({
   selected: boolean
   onToggleSelect: () => void
 }) {
+  const { t } = useTranslation()
+
+  const STATUS_CONFIG = {
+    pending: { label: t('status.pending'), className: 'badge-pending', icon: '⏳' },
+    processing: { label: t('status.processing'), className: 'badge-processing', icon: '' },
+    completed: { label: t('status.completed'), className: 'badge-completed', icon: '✓' },
+    failed: { label: t('status.failed'), className: 'badge-failed', icon: '✕' },
+  } as const
+
   const config = STATUS_CONFIG[contact.status]
   const isClickable = contact.status === 'completed'
 
@@ -109,7 +112,7 @@ function CardItem({
       <div className="relative aspect-[3/2] bg-dark-100 overflow-hidden">
         <img
           src={contact.imageUrl}
-          alt="名片"
+          alt={t('editor.original')}
           className={`
             w-full h-full object-cover
             ${contact.status === 'processing' ? 'opacity-60' : ''}
@@ -159,11 +162,11 @@ function CardItem({
 
         {/* 已完成悬浮提示 */}
         {isClickable && (
-          <div className="absolute inset-0 bg-primary-900/0 group-hover:bg-primary-900/40 
+          <div className="absolute inset-0 bg-primary-900/0 group-hover:bg-primary-900/40
             flex items-center justify-center transition-all duration-200">
-            <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 
+            <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100
               transition-opacity duration-200">
-              点击编辑
+              {t('queue.click_edit')}
             </span>
           </div>
         )}
@@ -181,19 +184,19 @@ function CardItem({
         ) : contact.status === 'failed' ? (
           <div className="flex items-center justify-between">
             <p className="text-xs text-red-600 truncate flex-1" title={contact.error}>
-              {contact.error || '识别失败'}
+              {contact.error || t('queue.recognize_failed')}
             </p>
             <button
               onClick={(e) => { e.stopPropagation(); onRetry() }}
-              className="text-xs text-primary-600 hover:text-primary-700 font-medium ml-2 
+              className="text-xs text-primary-600 hover:text-primary-700 font-medium ml-2
                 flex-shrink-0 hover:underline"
             >
-              重试
+              {t('action.retry')}
             </button>
           </div>
         ) : (
           <p className="text-xs text-dark-400">
-            {contact.status === 'pending' ? '等待识别...' : '正在识别...'}
+            {contact.status === 'pending' ? t('queue.waiting') : t('queue.recognizing')}
           </p>
         )}
       </div>

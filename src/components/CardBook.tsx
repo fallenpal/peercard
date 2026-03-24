@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { StoredContact } from '../types/contact'
 import { getAllContacts, getCachedContactList } from '../lib/db'
 import { supabase } from '../lib/supabase'
@@ -10,10 +11,11 @@ interface CardBookProps {
 }
 
 /** 按日期分组 */
-function groupByDate(contacts: StoredContact[]): Map<string, StoredContact[]> {
+function groupByDate(contacts: StoredContact[], lang: string): Map<string, StoredContact[]> {
   const map = new Map<string, StoredContact[]>()
+  const locale = lang.startsWith('zh') ? 'zh-CN' : 'en-US'
   for (const c of contacts) {
-    const dateStr = new Date(c.createdAt).toLocaleDateString('zh-CN', {
+    const dateStr = new Date(c.createdAt).toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -26,13 +28,13 @@ function groupByDate(contacts: StoredContact[]): Map<string, StoredContact[]> {
 }
 
 export default function CardBook({ userId, onSelectContact, onBack }: CardBookProps) {
+  const { t, i18n } = useTranslation()
   const [contacts, setContacts] = useState<StoredContact[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
 
   useEffect(() => {
     let cancelled = false
-    // 1. 先展示本地缓存（秒开）
     getCachedContactList(userId).then(cached => {
       if (cancelled) return
       if (cached.length > 0) {
@@ -40,7 +42,6 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
         setLoading(false)
       }
     })
-    // 2. 后台从云端拉最新数据
     getAllContacts(userId).then(list => {
       if (cancelled) return
       setContacts(list)
@@ -58,7 +59,7 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
     })
   }, [contacts, query])
 
-  const grouped = useMemo(() => groupByDate(filtered), [filtered])
+  const grouped = useMemo(() => groupByDate(filtered, i18n.language), [filtered, i18n.language])
 
   if (loading) {
     return (
@@ -77,11 +78,11 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
             onClick={onBack}
             className="text-dark-500 hover:text-dark-800 transition-colors text-sm"
           >
-            ← 返回
+            {t('action.back')}
           </button>
           <h2 className="text-xl font-bold text-dark-900">
-            名片夹
-            <span className="text-dark-400 text-base font-normal ml-2">({contacts.length}张)</span>
+            {t('cardbook.title')}
+            <span className="text-dark-400 text-base font-normal ml-2">{t('cardbook.count', { count: contacts.length })}</span>
           </h2>
         </div>
       </div>
@@ -96,7 +97,7 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="搜索姓名、公司、电话、邮箱..."
+          placeholder={t('placeholder.search')}
           className="input-field !pl-9"
         />
       </div>
@@ -104,7 +105,7 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
       {/* 空状态 */}
       {filtered.length === 0 && (
         <div className="text-center py-16 text-dark-400">
-          {query ? '没有找到匹配的名片' : '名片夹为空，识别名片后会自动保存'}
+          {query ? t('cardbook.no_match') : t('cardbook.empty')}
         </div>
       )}
 
@@ -125,7 +126,7 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
                   {/* 信息 */}
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-dark-900 text-base truncate">
-                      {contact.name || '未知姓名'}
+                      {contact.name || t('cardbook.unknown_name')}
                     </div>
                     {contact.title && (
                       <div className="text-sm text-dark-500 truncate">{contact.title}</div>
@@ -146,11 +147,11 @@ export default function CardBook({ userId, onSelectContact, onBack }: CardBookPr
 
 /** 缩略图：有缓存直接显示，没缓存懒加载签名 URL */
 function Thumbnail({ contact }: { contact: StoredContact }) {
+  const { t } = useTranslation()
   const [src, setSrc] = useState<string | undefined>(contact.image_url)
 
   useEffect(() => {
     if (src || !contact.image_path) return
-    // 懒加载：获取签名 URL
     supabase.storage
       .from('card-images')
       .createSignedUrl(contact.image_path, 3600)
@@ -162,7 +163,7 @@ function Thumbnail({ contact }: { contact: StoredContact }) {
   return (
     <div className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-dark-100">
       {src ? (
-        <img src={src} alt={contact.name || '名片'} className="w-full h-full object-cover" />
+        <img src={src} alt={contact.name || t('editor.original')} className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-dark-400 text-xs">📇</div>
       )}
