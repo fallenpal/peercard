@@ -84,12 +84,21 @@ export function generateSingleVCard(contact: Contact): string {
 
 /**
  * 触发浏览器文件下载
+ * vCard 在 iOS Safari 上使用 window.open 触发原生通讯录导入
  */
 export function downloadFile(content: string, filename: string, mimeType: string) {
-  // 使用 UTF-8 BOM 确保中文正确显示
+  // 使用 UTF-8 BOM 确保中文正确显示（仅 CSV）
   const bom = mimeType.includes('csv') ? '\uFEFF' : ''
   const blob = new Blob([bom + content], { type: `${mimeType};charset=utf-8` })
   const url = URL.createObjectURL(blob)
+
+  // iOS Safari + vCard: 用 window.open 触发原生通讯录导入界面
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  if (isIOS && mimeType.includes('vcard')) {
+    window.open(url, '_blank')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+    return
+  }
 
   const a = document.createElement('a')
   a.href = url
@@ -103,4 +112,13 @@ export function downloadFile(content: string, filename: string, mimeType: string
     URL.revokeObjectURL(url)
     document.body.removeChild(a)
   }, 100)
+}
+
+/**
+ * 将电话号码格式化为 WhatsApp 深链接
+ * 去除空格、横杠、括号，保留 + 和数字
+ */
+export function getWhatsAppUrl(phone: string): string {
+  const cleaned = phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
+  return `https://wa.me/${cleaned}`
 }

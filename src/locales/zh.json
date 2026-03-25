@@ -161,6 +161,9 @@
   "contact.no_email": "未识别到邮箱",
   "contact.no_phone": "未识别到电话",
 
+  "action.whatsapp": "WhatsApp",
+  "action.save_to_contacts": "保存到通讯录",
+
   "about.subtitle": "名片识别 · 快速录入通讯录",
   "about.guide_title": "使用说明",
   "about.guide1_title": "拍照/上传",

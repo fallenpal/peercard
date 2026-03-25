@@ -161,6 +161,9 @@
   "contact.no_email": "No email detected",
   "contact.no_phone": "No phone detected",
 
+  "action.whatsapp": "WhatsApp",
+  "action.save_to_contacts": "Save to Contacts",
+
   "about.subtitle": "Business Card Scanner · Quick Contact Import",
   "about.guide_title": "How to Use",
   "about.guide1_title": "Take Photo / Upload",
