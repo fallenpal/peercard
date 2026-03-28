@@ -181,8 +181,8 @@
 
   "settings.title": "高级设置",
   "settings.model_label": "识别模型",
-  "settings.model_7b": "7B — 快速",
-  "settings.model_7b_desc": "速度快，适合大批量识别",
+  "settings.model_32b": "32B — 均衡",
+  "settings.model_32b_desc": "速度与精度兼顾，推荐日常使用",
   "settings.model_72b": "72B — 精准",
   "settings.model_72b_desc": "精度高，但响应较慢，可能超时",
   "settings.model_saved": "已保存"

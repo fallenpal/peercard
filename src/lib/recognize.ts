@@ -60,7 +60,9 @@ export async function recognizeCard(imageFile: File): Promise<RecognizeResult> {
   const mediaType = 'image/jpeg'
 
   // 读取用户选择的模型（localStorage 存的是 '7b' | '72b'）
-  const model = (typeof window !== 'undefined' && localStorage.getItem('peercard_model')) || '72b'
+  const storedModel = typeof window !== 'undefined' ? localStorage.getItem('peercard_model') : null
+  // 兼容旧值 '7b' → 降级为 '32b'
+  const model = (storedModel === '7b' ? '32b' : storedModel) || '72b'
 
   const response = await fetch('/api/recognize', {
     method: 'POST',

@@ -181,8 +181,8 @@
 
   "settings.title": "Advanced Settings",
   "settings.model_label": "Recognition Model",
-  "settings.model_7b": "7B — Fast",
-  "settings.model_7b_desc": "Faster, good for bulk scanning",
+  "settings.model_32b": "32B — Balanced",
+  "settings.model_32b_desc": "Good balance of speed and accuracy, recommended for daily use",
   "settings.model_72b": "72B — Accurate",
   "settings.model_72b_desc": "Higher accuracy, but slower and may timeout",
   "settings.model_saved": "Saved"

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 const MODEL_OPTIONS = [
   { key: '72b', labelKey: 'settings.model_72b', descKey: 'settings.model_72b_desc' },
-  { key: '7b', labelKey: 'settings.model_7b', descKey: 'settings.model_7b_desc' },
+  { key: '32b', labelKey: 'settings.model_32b', descKey: 'settings.model_32b_desc' },
 ] as const
 
 interface AboutPageProps {

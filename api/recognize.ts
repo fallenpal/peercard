@@ -13,7 +13,7 @@ interface RequestBody {
 
 // 允许的模型白名单
 const ALLOWED_MODELS: Record<string, string> = {
-  '7b': 'Qwen/Qwen2.5-VL-7B-Instruct',
+  '32b': 'Qwen/Qwen2.5-VL-32B-Instruct',
   '72b': 'Qwen/Qwen2.5-VL-72B-Instruct',
 }
 const DEFAULT_MODEL = '72b'
