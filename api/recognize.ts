@@ -143,12 +143,22 @@ export default async function handler(req: any, res: any) {
     }
 
     const result = JSON.parse(jsonStr)
+
+    // 公司为空时，用邮箱域名补全
+    let organization = result.organization ?? null
+    if (!organization && Array.isArray(result.emails) && result.emails.length > 0) {
+      const domain = result.emails[0].split('@')[1]
+      if (domain) {
+        organization = domain
+      }
+    }
+
     const totalDuration = Date.now() - startTime
-    console.log(`[${reqId}] 识别完成 | 总耗时=${totalDuration}ms | api耗时=${apiDuration}ms | name=${result.name}`)
+    console.log(`[${reqId}] 识别完成 | 总耗时=${totalDuration}ms | api耗时=${apiDuration}ms | name=${result.name} | org=${organization}`)
 
     return res.status(200).json({
       name: result.name ?? null,
-      organization: result.organization ?? null,
+      organization,
       title: result.title ?? null,
       emails: Array.isArray(result.emails) ? result.emails : [],
       phones: Array.isArray(result.phones) ? result.phones : [],
