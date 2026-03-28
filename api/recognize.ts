@@ -8,7 +8,15 @@ export const config = {
 interface RequestBody {
   image: string    // base64 编码的图片
   mediaType: string // MIME 类型
+  model?: string   // 可选：前端传入的模型选择
 }
+
+// 允许的模型白名单
+const ALLOWED_MODELS: Record<string, string> = {
+  '7b': 'Qwen/Qwen2.5-VL-7B-Instruct',
+  '72b': 'Qwen/Qwen2.5-VL-72B-Instruct',
+}
+const DEFAULT_MODEL = '72b'
 
 const RECOGNITION_PROMPT = `请分析这张名片图片，提取以下信息并以 JSON 格式返回：
 
@@ -50,17 +58,28 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'AI 服务未配置，请设置 SILICONFLOW_API_KEY 环境变量' })
   }
 
+  const startTime = Date.now()
+  const reqId = Math.random().toString(36).slice(2, 8)
+
   try {
-    const { image, mediaType } = req.body as RequestBody
+    const { image, mediaType, model: modelKey } = req.body as RequestBody
 
     if (!image) {
       return res.status(400).json({ error: '缺少图片数据' })
     }
 
+    // 解析模型选择，白名单校验
+    const resolvedModelKey = (modelKey && ALLOWED_MODELS[modelKey]) ? modelKey : DEFAULT_MODEL
+    const modelName = ALLOWED_MODELS[resolvedModelKey]
+
+    const imageSizeKB = Math.round((image.length * 3) / 4 / 1024)
+    console.log(`[${reqId}] 识别开始 | model=${modelName} | image=${imageSizeKB}KB`)
+
     // 构造 data URI 格式供 OpenAI 兼容接口使用
     const imageDataUri = `data:${mediaType || 'image/jpeg'};base64,${image}`
 
-    // 调用 SiliconFlow OpenAI 兼容 API（Qwen2.5-VL-72B）
+    // 调用 SiliconFlow OpenAI 兼容 API
+    const apiStart = Date.now()
     const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -68,7 +87,7 @@ export default async function handler(req: any, res: any) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+        model: modelName,
         max_tokens: 1024,
         messages: [
           {
@@ -88,11 +107,13 @@ export default async function handler(req: any, res: any) {
           },
         ],
       }),
+      signal: AbortSignal.timeout(50000), // 50s 超时，留余量给 Vercel 返回错误
     })
+    const apiDuration = Date.now() - apiStart
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('SiliconFlow API error:', response.status, errorText)
+      console.error(`[${reqId}] SiliconFlow API 错误 | status=${response.status} | api耗时=${apiDuration}ms | error=${errorText.slice(0, 300)}`)
 
       if (response.status === 429) {
         return res.status(429).json({ error: 'API 调用频率过高，请稍后重试' })
@@ -104,11 +125,14 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: `AI 识别服务错误 (${response.status}): ${errorText.slice(0, 200)}` })
     }
 
+    console.log(`[${reqId}] SiliconFlow 响应成功 | api耗时=${apiDuration}ms`)
+
     const data = await response.json()
 
     // 从 OpenAI 兼容格式响应中提取文本内容
     const messageContent = data.choices?.[0]?.message?.content
     if (!messageContent) {
+      console.error(`[${reqId}] 空响应 | usage=${JSON.stringify(data.usage)}`)
       return res.status(500).json({ error: '无法从 AI 响应中提取结果' })
     }
 
@@ -119,6 +143,8 @@ export default async function handler(req: any, res: any) {
     }
 
     const result = JSON.parse(jsonStr)
+    const totalDuration = Date.now() - startTime
+    console.log(`[${reqId}] 识别完成 | 总耗时=${totalDuration}ms | api耗时=${apiDuration}ms | name=${result.name}`)
 
     return res.status(200).json({
       name: result.name ?? null,
@@ -130,7 +156,16 @@ export default async function handler(req: any, res: any) {
       address: typeof result.address === 'string' ? result.address : null,
     })
   } catch (error) {
-    console.error('Recognition error:', error)
+    const totalDuration = Date.now() - startTime
+    const isTimeout = error instanceof DOMException && error.name === 'TimeoutError'
+    const isAbort = error instanceof DOMException && error.name === 'AbortError'
+
+    console.error(`[${reqId}] 识别失败 | 总耗时=${totalDuration}ms | timeout=${isTimeout} | abort=${isAbort} | error=`, error)
+
+    if (isTimeout || isAbort) {
+      return res.status(504).json({ error: 'AI 识别超时，模型响应过慢，请稍后重试或切换为 7B 模型' })
+    }
+
     return res.status(500).json({
       error: error instanceof SyntaxError
         ? '识别结果解析失败，请重试'

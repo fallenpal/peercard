@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 
+const MODEL_OPTIONS = [
+  { key: '72b', labelKey: 'settings.model_72b', descKey: 'settings.model_72b_desc' },
+  { key: '7b', labelKey: 'settings.model_7b', descKey: 'settings.model_7b_desc' },
+] as const
+
 interface AboutPageProps {
   onBack: () => void
 }
@@ -9,6 +14,10 @@ interface AboutPageProps {
 export default function AboutPage({ onBack }: AboutPageProps) {
   const { t } = useTranslation()
   const [visitCount, setVisitCount] = useState<number | null>(null)
+  const [selectedModel, setSelectedModel] = useState(() =>
+    localStorage.getItem('peercard_model') || '72b'
+  )
+  const [showSaved, setShowSaved] = useState(false)
 
   useEffect(() => {
     supabase.from('visits').select('count').eq('id', 1).single()
@@ -54,6 +63,47 @@ export default function AboutPage({ onBack }: AboutPageProps) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 高级设置 */}
+      <div className="bg-white rounded-xl shadow-sm p-5">
+        <h3 className="font-semibold text-dark-800 mb-4">{t('settings.title')}</h3>
+        <div>
+          <label className="text-sm text-dark-600 mb-2 block">{t('settings.model_label')}</label>
+          <div className="space-y-2">
+            {MODEL_OPTIONS.map(opt => (
+              <label
+                key={opt.key}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedModel === opt.key
+                    ? 'border-primary-500 bg-primary-50'
+                    : 'border-dark-200 hover:border-dark-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="model"
+                  value={opt.key}
+                  checked={selectedModel === opt.key}
+                  onChange={() => {
+                    setSelectedModel(opt.key)
+                    localStorage.setItem('peercard_model', opt.key)
+                    setShowSaved(true)
+                    setTimeout(() => setShowSaved(false), 1500)
+                  }}
+                  className="mt-0.5 accent-primary-600"
+                />
+                <div>
+                  <div className="text-sm font-medium text-dark-800">{t(opt.labelKey)}</div>
+                  <div className="text-xs text-dark-500 mt-0.5">{t(opt.descKey)}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+          {showSaved && (
+            <div className="text-xs text-emerald-600 mt-2">✓ {t('settings.model_saved')}</div>
+          )}
         </div>
       </div>
 

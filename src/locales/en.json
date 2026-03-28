@@ -177,5 +177,13 @@
   "about.guide5_title": "Contact Book",
   "about.guide5_desc": "Sign up to save scanned cards automatically, with search and management",
   "about.visits": "visits",
-  "about.copyright": "© 2026 PeerCard. Built for Peering & Interconnect professionals."
+  "about.copyright": "© 2026 PeerCard. Built for Peering & Interconnect professionals.",
+
+  "settings.title": "Advanced Settings",
+  "settings.model_label": "Recognition Model",
+  "settings.model_7b": "7B — Fast",
+  "settings.model_7b_desc": "Faster, good for bulk scanning",
+  "settings.model_72b": "72B — Accurate",
+  "settings.model_72b_desc": "Higher accuracy, but slower and may timeout",
+  "settings.model_saved": "Saved"
 }

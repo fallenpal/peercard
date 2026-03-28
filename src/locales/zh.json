@@ -177,5 +177,13 @@
   "about.guide5_title": "名片夹",
   "about.guide5_desc": "注册登录后，识别过的名片自动保存到名片夹，支持搜索和管理",
   "about.visits": "次访问",
-  "about.copyright": "© 2026 PeerCard. Built for Peering & Interconnect professionals."
+  "about.copyright": "© 2026 PeerCard. Built for Peering & Interconnect professionals.",
+
+  "settings.title": "高级设置",
+  "settings.model_label": "识别模型",
+  "settings.model_7b": "7B — 快速",
+  "settings.model_7b_desc": "速度快，适合大批量识别",
+  "settings.model_72b": "72B — 精准",
+  "settings.model_72b_desc": "精度高，但响应较慢，可能超时",
+  "settings.model_saved": "已保存"
 }

@@ -59,10 +59,13 @@ export async function recognizeCard(imageFile: File): Promise<RecognizeResult> {
   const base64 = await compressImageToBase64(imageFile)
   const mediaType = 'image/jpeg'
 
+  // 读取用户选择的模型（localStorage 存的是 '7b' | '72b'）
+  const model = (typeof window !== 'undefined' && localStorage.getItem('peercard_model')) || '72b'
+
   const response = await fetch('/api/recognize', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: base64, mediaType }),
+    body: JSON.stringify({ image: base64, mediaType, model }),
   })
 
   if (!response.ok) {
