@@ -17,7 +17,10 @@ const ALLOWED_MODELS: Record<string, string> = {
 }
 const DEFAULT_MODEL = 'deepseek-ocr'
 
-const RECOGNITION_PROMPT = `请分析这张名片图片，提取以下信息并以 JSON 格式返回：
+const RECOGNITION_PROMPT = `<image>
+<|grounding|>OCR this business card image, then extract the contact information and return JSON only.
+
+请分析这张名片图片，提取以下信息并以 JSON 格式返回：
 
 {
   "name": "全名",
