@@ -4,7 +4,7 @@ import type { RecognizeResult } from '../types/contact'
 const MAX_DIMENSION = 1600
 // JPEG 压缩质量
 const JPEG_QUALITY = 0.8
-const DEFAULT_MODEL = 'deepseek-ocr'
+const DEFAULT_MODEL = 'qwen-3.6-27b'
 const SUPPORTED_MODELS = new Set([DEFAULT_MODEL])
 
 /**

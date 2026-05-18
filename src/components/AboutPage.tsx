@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 
 const MODEL_OPTIONS = [
-  { key: 'deepseek-ocr', labelKey: 'settings.model_deepseek_ocr', descKey: 'settings.model_deepseek_ocr_desc' },
+  { key: 'qwen-3.6-27b', labelKey: 'settings.model_qwen_36_27b', descKey: 'settings.model_qwen_36_27b_desc' },
 ] as const
 const DEFAULT_MODEL = MODEL_OPTIONS[0].key
 const MODEL_KEYS = new Set(MODEL_OPTIONS.map(opt => opt.key))

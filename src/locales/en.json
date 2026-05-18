@@ -181,7 +181,7 @@
 
   "settings.title": "Advanced Settings",
   "settings.model_label": "Recognition Model",
-  "settings.model_deepseek_ocr": "DeepSeek-OCR",
-  "settings.model_deepseek_ocr_desc": "Document and image OCR model, now used as the default recognizer",
+  "settings.model_qwen_36_27b": "Qwen3.6 27B",
+  "settings.model_qwen_36_27b_desc": "Vision understanding model that extracts structured card fields directly",
   "settings.model_saved": "Saved"
 }

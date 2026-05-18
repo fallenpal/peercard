@@ -181,7 +181,7 @@
 
   "settings.title": "高级设置",
   "settings.model_label": "识别模型",
-  "settings.model_deepseek_ocr": "DeepSeek-OCR",
-  "settings.model_deepseek_ocr_desc": "面向文档和图片文字识别，当前默认识别模型",
+  "settings.model_qwen_36_27b": "Qwen3.6 27B",
+  "settings.model_qwen_36_27b_desc": "视觉理解模型，直接抽取名片结构化字段",
   "settings.model_saved": "已保存"
 }
