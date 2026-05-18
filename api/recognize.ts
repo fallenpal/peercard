@@ -40,6 +40,62 @@ const RECOGNITION_PROMPT = `<image>
 - address 字段提取名片上的公司地址或联系地址
 - 只返回 JSON，不要任何其他文字`
 
+function extractJsonObject(content: string) {
+  let jsonStr = content.trim()
+  if (jsonStr.startsWith('```')) {
+    jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+  }
+
+  const start = jsonStr.indexOf('{')
+  const end = jsonStr.lastIndexOf('}')
+  if (start !== -1 && end !== -1 && end > start) {
+    jsonStr = jsonStr.slice(start, end + 1)
+  }
+
+  return JSON.parse(jsonStr)
+}
+
+function uniqueMatches(text: string, pattern: RegExp) {
+  return Array.from(new Set(text.match(pattern) ?? [])).map(item => item.trim())
+}
+
+function parseOcrFallback(content: string) {
+  const emails = uniqueMatches(content, /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)
+  const phones = uniqueMatches(content, /(?:\+?\d[\d\s().-]{6,}\d)/g)
+    .filter(phone => phone.replace(/\D/g, '').length >= 7)
+  const urls = uniqueMatches(content, /\b(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|[a-z0-9-]+\.[a-z]{2,}(?:\/[^\s,;]*)?)\b/gi)
+    .filter(url => !emails.some(email => email.toLowerCase().includes(url.toLowerCase())))
+
+  const lines = content
+    .replace(/```[\s\S]*?```/g, '')
+    .split(/\r?\n/)
+    .map(line => line.replace(/^[\s\-*|#>]+|[\s|]+$/g, '').trim())
+    .filter(Boolean)
+    .filter(line => !emails.some(email => line.includes(email)))
+    .filter(line => !phones.some(phone => line.includes(phone)))
+    .filter(line => !urls.some(url => line.includes(url)))
+    .filter(line => !/^(ocr|json|name|organization|title|emails?|phones?|url|address)$/i.test(line))
+
+  const name = lines.find(line => line.length <= 80) ?? null
+  const organization = lines.find(line => line !== name && line.length <= 120) ?? null
+  const title = lines.find(line => line !== name && line !== organization && line.length <= 120) ?? null
+
+  return {
+    name,
+    organization,
+    title,
+    emails,
+    phones,
+    url: urls[0] ?? null,
+    address: lines.find(line =>
+      line !== name &&
+      line !== organization &&
+      line !== title &&
+      /(street|road|avenue|suite|floor|building|city|china|usa|地址|路|街|楼|层|区|市|省)/i.test(line)
+    ) ?? null,
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // CORS 支持 — 必须在 method 检查之前，否则 OPTIONS 预检请求会被 405 拦截
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -138,13 +194,12 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: '无法从 AI 响应中提取结果' })
     }
 
-    // 解析 JSON（模型可能会包含 markdown 代码块标记）
-    let jsonStr = messageContent.trim()
-    if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    let result
+    try {
+      result = extractJsonObject(messageContent)
+    } catch {
+      result = parseOcrFallback(messageContent)
     }
-
-    const result = JSON.parse(jsonStr)
 
     // 公司为空时，用邮箱域名补全
     let organization = result.organization ?? null
