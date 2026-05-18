@@ -18,27 +18,8 @@ const ALLOWED_MODELS: Record<string, string> = {
 const DEFAULT_MODEL = 'deepseek-ocr'
 
 const RECOGNITION_PROMPT = `<image>
-<|grounding|>OCR this business card image, then extract the contact information and return JSON only.
-
-请分析这张名片图片，提取以下信息并以 JSON 格式返回：
-
-{
-  "name": "全名",
-  "organization": "公司/组织名称",
-  "title": "职位",
-  "emails": ["邮箱1", "邮箱2"],
-  "phones": ["电话1", "电话2"],
-  "url": "网站URL",
-  "address": "地址"
-}
-
-规则：
-- 如果某个字段无法识别，设为 null（emails 和 phones 设为空数组）
-- 电话号码保留原始格式（含国家代码和分隔符）
-- 如果有多个邮箱或电话，全部提取
-- url 字段提取名片上的网站地址
-- address 字段提取名片上的公司地址或联系地址
-- 只返回 JSON，不要任何其他文字`
+Free OCR. Read all visible text from this business card.
+Return plain text only, one item per line. Do not explain.`
 
 function extractJsonObject(content: string) {
   let jsonStr = content.trim()
@@ -60,25 +41,37 @@ function uniqueMatches(text: string, pattern: RegExp) {
 }
 
 function parseOcrFallback(content: string) {
+  const cleanContent = content.replace(/<[^>\n]+>/g, ' ')
   const emails = uniqueMatches(content, /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)
-  const phones = uniqueMatches(content, /(?:\+?\d[\d\s().-]{6,}\d)/g)
+  const phones = uniqueMatches(cleanContent, /(?:\+?\d[\d\s().-]{6,}\d)/g)
     .filter(phone => phone.replace(/\D/g, '').length >= 7)
-  const urls = uniqueMatches(content, /\b(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|[a-z0-9-]+\.[a-z]{2,}(?:\/[^\s,;]*)?)\b/gi)
+  const urls = uniqueMatches(cleanContent, /\b(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|[a-z0-9-]+\.[a-z]{2,}(?:\/[^\s,;]*)?)\b/gi)
     .filter(url => !emails.some(email => email.toLowerCase().includes(url.toLowerCase())))
 
-  const lines = content
+  const rawLines = cleanContent
     .replace(/```[\s\S]*?```/g, '')
     .split(/\r?\n/)
     .map(line => line.replace(/^[\s\-*|#>]+|[\s|]+$/g, '').trim())
     .filter(Boolean)
+
+  const labeled = new Map<string, string>()
+  for (const line of rawLines) {
+    const match = line.match(/^(name|full name|organization|company|company name|title|job title|position|url|website|address|姓名|名字|公司|组织|职位|头衔|网站|网址|地址)\s*[:：]\s*(.+)$/i)
+    if (match?.[1] && match?.[2]) {
+      labeled.set(match[1].toLowerCase(), match[2].trim())
+    }
+  }
+
+  const lines = rawLines
     .filter(line => !emails.some(email => line.includes(email)))
     .filter(line => !phones.some(phone => line.includes(phone)))
     .filter(line => !urls.some(url => line.includes(url)))
-    .filter(line => !/^(ocr|json|name|organization|title|emails?|phones?|url|address)$/i.test(line))
+    .map(line => line.replace(/^[^:：]{1,24}[:：]\s*/, '').trim())
+    .filter(line => !/^(ocr|json|name|organization|title|emails?|phones?|url|address|信息|看起来像)$/i.test(line))
 
-  const name = lines.find(line => line.length <= 80) ?? null
-  const organization = lines.find(line => line !== name && line.length <= 120) ?? null
-  const title = lines.find(line => line !== name && line !== organization && line.length <= 120) ?? null
+  const name = labeled.get('name') || labeled.get('full name') || labeled.get('姓名') || labeled.get('名字') || lines.find(line => line.length <= 80) || null
+  const organization = labeled.get('organization') || labeled.get('company') || labeled.get('company name') || labeled.get('公司') || labeled.get('组织') || lines.find(line => line !== name && line.length <= 120) || null
+  const title = labeled.get('title') || labeled.get('job title') || labeled.get('position') || labeled.get('职位') || labeled.get('头衔') || lines.find(line => line !== name && line !== organization && line.length <= 120) || null
 
   return {
     name,
@@ -86,8 +79,8 @@ function parseOcrFallback(content: string) {
     title,
     emails,
     phones,
-    url: urls[0] ?? null,
-    address: lines.find(line =>
+    url: labeled.get('url') || labeled.get('website') || labeled.get('网站') || labeled.get('网址') || urls[0] || null,
+    address: labeled.get('address') || labeled.get('地址') || lines.find(line =>
       line !== name &&
       line !== organization &&
       line !== title &&
