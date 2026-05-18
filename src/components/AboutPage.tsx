@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 
 const MODEL_OPTIONS = [
-  { key: '72b', labelKey: 'settings.model_72b', descKey: 'settings.model_72b_desc' },
-  { key: '32b', labelKey: 'settings.model_32b', descKey: 'settings.model_32b_desc' },
+  { key: 'deepseek-ocr', labelKey: 'settings.model_deepseek_ocr', descKey: 'settings.model_deepseek_ocr_desc' },
 ] as const
+const DEFAULT_MODEL = MODEL_OPTIONS[0].key
+const MODEL_KEYS = new Set(MODEL_OPTIONS.map(opt => opt.key))
 
 interface AboutPageProps {
   onBack: () => void
@@ -14,9 +15,10 @@ interface AboutPageProps {
 export default function AboutPage({ onBack }: AboutPageProps) {
   const { t } = useTranslation()
   const [visitCount, setVisitCount] = useState<number | null>(null)
-  const [selectedModel, setSelectedModel] = useState(() =>
-    localStorage.getItem('peercard_model') || '72b'
-  )
+  const [selectedModel, setSelectedModel] = useState(() => {
+    const saved = localStorage.getItem('peercard_model')
+    return saved && MODEL_KEYS.has(saved as typeof DEFAULT_MODEL) ? saved : DEFAULT_MODEL
+  })
   const [showSaved, setShowSaved] = useState(false)
 
   useEffect(() => {

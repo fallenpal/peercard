@@ -4,6 +4,8 @@ import type { RecognizeResult } from '../types/contact'
 const MAX_DIMENSION = 1600
 // JPEG 压缩质量
 const JPEG_QUALITY = 0.8
+const DEFAULT_MODEL = 'deepseek-ocr'
+const SUPPORTED_MODELS = new Set([DEFAULT_MODEL])
 
 /**
  * 将图片文件加载为 HTMLImageElement
@@ -59,10 +61,9 @@ export async function recognizeCard(imageFile: File): Promise<RecognizeResult> {
   const base64 = await compressImageToBase64(imageFile)
   const mediaType = 'image/jpeg'
 
-  // 读取用户选择的模型（localStorage 存的是 '7b' | '72b'）
+  // 读取用户选择的模型
   const storedModel = typeof window !== 'undefined' ? localStorage.getItem('peercard_model') : null
-  // 兼容旧值 '7b' → 降级为 '32b'
-  const model = (storedModel === '7b' ? '32b' : storedModel) || '72b'
+  const model = storedModel && SUPPORTED_MODELS.has(storedModel) ? storedModel : DEFAULT_MODEL
 
   const response = await fetch('/api/recognize', {
     method: 'POST',

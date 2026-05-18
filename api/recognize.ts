@@ -13,10 +13,9 @@ interface RequestBody {
 
 // 允许的模型白名单
 const ALLOWED_MODELS: Record<string, string> = {
-  '32b': 'Qwen/Qwen2.5-VL-32B-Instruct',
-  '72b': 'Qwen/Qwen2.5-VL-72B-Instruct',
+  'deepseek-ocr': 'deepseek-ai/DeepSeek-OCR',
 }
-const DEFAULT_MODEL = '72b'
+const DEFAULT_MODEL = 'deepseek-ocr'
 
 const RECOGNITION_PROMPT = `请分析这张名片图片，提取以下信息并以 JSON 格式返回：
 
@@ -173,7 +172,7 @@ export default async function handler(req: any, res: any) {
     console.error(`[${reqId}] 识别失败 | 总耗时=${totalDuration}ms | timeout=${isTimeout} | abort=${isAbort} | error=`, error)
 
     if (isTimeout || isAbort) {
-      return res.status(504).json({ error: 'AI 识别超时，模型响应过慢，请稍后重试或切换为 7B 模型' })
+      return res.status(504).json({ error: 'AI 识别超时，模型响应过慢，请稍后重试' })
     }
 
     return res.status(500).json({
